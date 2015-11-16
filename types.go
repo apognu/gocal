@@ -22,12 +22,15 @@ type Event struct {
 	Summary        string
 	Description    string
 	Categories     []string
-	Start          time.Time
-	End            time.Time
+	Start          *time.Time
+	End            *time.Time
+	Stamp          *time.Time
+	Created        *time.Time
+	LastModified   *time.Time
 	Location       string
-	Geo            Geo
+	Geo            *Geo
 	Status         string
-	Organizer      Organizer
+	Organizer      *Organizer
 	Attendees      []Attendee
 	Attachments    []Attachment
 	IsRecurring    bool

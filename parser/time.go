@@ -10,7 +10,7 @@ const (
 	TimeEnd
 )
 
-func ParseTime(s string, params map[string]string, ty int) (time.Time, error) {
+func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 	var err error
 	var tz *time.Location
 	format := ""
@@ -23,7 +23,7 @@ func ParseTime(s string, params map[string]string, ty int) (time.Time, error) {
 			t = time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 0, time.UTC)
 		}
 
-		return t, err
+		return &t, err
 	}
 
 	if strings.HasSuffix(s, "Z") {
@@ -45,5 +45,5 @@ func ParseTime(s string, params map[string]string, ty int) (time.Time, error) {
 
 	t, err := time.ParseInLocation(format, s, tz)
 
-	return t, err
+	return &t, err
 }

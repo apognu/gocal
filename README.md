@@ -32,6 +32,7 @@ only the following properties are parsed:
  * ```UID```
  * ```SUMMARY``` / ```DESCRIPTION```
  * ```DTSTART``` / ```DTEND``` (day-long, local, UTC and ```TZID```d)
+ * ```DTSTAMP``` / ```CREATED``` / ```LAST-MODIFIED```
  * ```LOCATION```
  * ```STATUS```
  * ```ORGANIZER``` (```CN```; ```DIR``` and value)
@@ -42,3 +43,5 @@ only the following properties are parsed:
 
 And I do not (_for now_) try and parse ```RRULE```s, so recurring events will show
 as a single event.
+
+Also, we ignore whatever's not a ```VEVENT```.

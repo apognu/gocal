@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/apognu/gocal/parser"
 )
 
@@ -22,15 +23,23 @@ func (gc *Gocal) Parse() {
 	for {
 		l, err, done := gc.parseLine()
 		if err != nil {
-			continue
+			logrus.Fatal(err)
 		}
 
 		if l.Key == "BEGIN" && l.Value == "VEVENT" {
 			gc.buffer = &Event{}
 		} else if l.Key == "END" && l.Value == "VEVENT" {
+			err := gc.checkEvent()
+			if err != nil {
+				logrus.Fatal(err)
+			}
+
 			gc.Events = append(gc.Events, *gc.buffer)
 		} else {
-			gc.parseEvent(l)
+			err := gc.parseEvent(l)
+			if err != nil {
+				logrus.Fatal(err)
+			}
 		}
 
 		if done {
@@ -57,7 +66,7 @@ func (gc *Gocal) parseLine() (*Line, error, bool) {
 
 	tokens := strings.SplitN(l, ":", 2)
 	if len(tokens) < 2 {
-		return nil, fmt.Errorf(""), done
+		return nil, fmt.Errorf("could not parse item: %s", l), done
 	}
 
 	attr, params := parser.ParseParameters(tokens[0])
@@ -65,40 +74,95 @@ func (gc *Gocal) parseLine() (*Line, error, bool) {
 	return &Line{Key: attr, Params: params, Value: parser.UnescapeString(strings.TrimPrefix(tokens[1], " "))}, nil, done
 }
 
-func (gc *Gocal) parseEvent(l *Line) {
+func (gc *Gocal) parseEvent(l *Line) error {
 	var err error
 
 	// If this is nil, that means we did not get a BEGIN:VEVENT
 	if gc.buffer == nil {
-		return
+		return nil
 	}
 
 	switch l.Key {
 	case "UID":
+		if gc.buffer.Uid != "" {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
 		gc.buffer.Uid = l.Value
 	case "SUMMARY":
+		if gc.buffer.Summary != "" {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
 		gc.buffer.Summary = l.Value
 	case "DESCRIPTION":
+		if gc.buffer.Description != "" {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
 		gc.buffer.Description = l.Value
 	case "DTSTART":
+		if gc.buffer.Start != nil {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
 		gc.buffer.Start, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
 		if err != nil {
-			return
+			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
 	case "DTEND":
 		gc.buffer.End, err = parser.ParseTime(l.Value, l.Params, parser.TimeEnd)
 		if err != nil {
-			return
+			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
+		}
+	case "DTSTAMP":
+		gc.buffer.Stamp, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		if err != nil {
+			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
+		}
+	case "CREATED":
+		if gc.buffer.Created != nil {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
+		gc.buffer.Created, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		if err != nil {
+			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
+		}
+	case "LAST-MODIFIED":
+		if gc.buffer.LastModified != nil {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
+		gc.buffer.LastModified, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		if err != nil {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 	case "RRULE":
+		if gc.buffer.RecurrenceRule != "" {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
 		gc.buffer.IsRecurring = true
 		gc.buffer.RecurrenceRule = l.Value
 	case "LOCATION":
+		if gc.buffer.Location != "" {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
 		gc.buffer.Location = l.Value
 	case "STATUS":
+		if gc.buffer.Status != "" {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
 		gc.buffer.Status = l.Value
 	case "ORGANIZER":
-		gc.buffer.Organizer = Organizer{
+		if gc.buffer.Organizer != nil {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
+		gc.buffer.Organizer = &Organizer{
 			Cn:          l.Params["CN"],
 			DirectoryDn: l.Params["DIR"],
 			Value:       l.Value,
@@ -119,9 +183,32 @@ func (gc *Gocal) parseEvent(l *Line) {
 			Value:    l.Value,
 		})
 	case "GEO":
-		lat, long := parser.ParseGeo(l.Value)
-		gc.buffer.Geo = Geo{lat, long}
+		if gc.buffer.Geo != nil {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
+		lat, long, err := parser.ParseGeo(l.Value)
+		if err != nil {
+			return err
+		}
+		gc.buffer.Geo = &Geo{lat, long}
 	case "CATEGORIES":
 		gc.buffer.Categories = strings.Split(l.Value, ",")
 	}
+
+	return nil
+}
+
+func (gc *Gocal) checkEvent() error {
+	if gc.buffer.Uid == "" {
+		return fmt.Errorf("could not parse event without UID")
+	}
+	if gc.buffer.Start == nil {
+		return fmt.Errorf("could not parse event without DTSTART")
+	}
+	if gc.buffer.Stamp == nil {
+		return fmt.Errorf("could not parse event without DTSTAMP")
+	}
+
+	return nil
 }
