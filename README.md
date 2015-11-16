@@ -34,9 +34,11 @@ only the following properties are parsed:
  * ```DTSTART``` / ```DTEND``` (day-long, local, UTC and ```TZID```d)
  * ```LOCATION```
  * ```STATUS```
- * ```ORGANIZER``` (```CN``` and value)
- * ```ATTENDEE```s (```CN```, ```PARTSTAT``` and value)
- * ```ATTACH``` (```FILENAME``` and value)
+ * ```ORGANIZER``` (```CN```; ```DIR``` and value)
+ * ```ATTENDEE```s (```CN```, ```DIR```, ```PARTSTAT``` and value)
+ * ```ATTACH``` (```FILENAME```, ```ENCODING```, ```VALUE```, ```FMTTYPE``` and value)
+ * ```CATEGORIES```
+ * ```GEO```
 
 And I do not (_for now_) try and parse ```RRULE```s, so recurring events will show
 as a single event.

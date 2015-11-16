@@ -99,19 +99,29 @@ func (gc *Gocal) parseEvent(l *Line) {
 		gc.buffer.Status = l.Value
 	case "ORGANIZER":
 		gc.buffer.Organizer = Organizer{
-			Cn:    l.Params["CN"],
-			Value: l.Value,
+			Cn:          l.Params["CN"],
+			DirectoryDn: l.Params["DIR"],
+			Value:       l.Value,
 		}
 	case "ATTENDEE":
 		gc.buffer.Attendees = append(gc.buffer.Attendees, Attendee{
-			Cn:     l.Params["CN"],
-			Status: l.Params["PARTSTAT"],
-			Value:  l.Value,
+			Cn:          l.Params["CN"],
+			DirectoryDn: l.Params["DIR"],
+			Status:      l.Params["PARTSTAT"],
+			Value:       l.Value,
 		})
 	case "ATTACH":
 		gc.buffer.Attachments = append(gc.buffer.Attachments, Attachment{
+			Type:     l.Params["VALUE"],
+			Encoding: l.Params["ENCODING"],
+			Mime:     l.Params["FMTTYPE"],
 			Filename: l.Params["FILENAME"],
 			Value:    l.Value,
 		})
+	case "GEO":
+		lat, long := parser.ParseGeo(l.Value)
+		gc.buffer.Geo = Geo{lat, long}
+	case "CATEGORIES":
+		gc.buffer.Categories = strings.Split(l.Value, ",")
 	}
 }

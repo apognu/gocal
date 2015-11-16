@@ -21,9 +21,11 @@ type Event struct {
 	Uid            string
 	Summary        string
 	Description    string
+	Categories     []string
 	Start          time.Time
 	End            time.Time
 	Location       string
+	Geo            Geo
 	Status         string
 	Organizer      Organizer
 	Attendees      []Attendee
@@ -32,18 +34,28 @@ type Event struct {
 	RecurrenceRule string
 }
 
+type Geo struct {
+	Lat  float64
+	Long float64
+}
+
 type Organizer struct {
-	Cn    string
-	Value string
+	Cn          string
+	DirectoryDn string
+	Value       string
 }
 
 type Attendee struct {
-	Cn     string
-	Status string
-	Value  string
+	Cn          string
+	DirectoryDn string
+	Status      string
+	Value       string
 }
 
 type Attachment struct {
+	Encoding string
+	Type     string
+	Mime     string
 	Filename string
 	Value    string
 }
