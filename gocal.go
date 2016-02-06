@@ -6,7 +6,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/apognu/gocal/parser"
 )
 
@@ -17,13 +16,13 @@ func NewParser(r io.Reader) *Gocal {
 	}
 }
 
-func (gc *Gocal) Parse() {
+func (gc *Gocal) Parse() error {
 	gc.scanner.Scan()
 
 	for {
 		l, err, done := gc.parseLine()
 		if err != nil {
-			logrus.Fatal(err)
+      return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
 		}
 
 		if l.Key == "BEGIN" && l.Value == "VEVENT" {
@@ -31,14 +30,14 @@ func (gc *Gocal) Parse() {
 		} else if l.Key == "END" && l.Value == "VEVENT" {
 			err := gc.checkEvent()
 			if err != nil {
-				logrus.Fatal(err)
+        return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
 			}
 
 			gc.Events = append(gc.Events, *gc.buffer)
 		} else {
 			err := gc.parseEvent(l)
 			if err != nil {
-				logrus.Fatal(err)
+        return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
 			}
 		}
 
@@ -46,6 +45,8 @@ func (gc *Gocal) Parse() {
 			break
 		}
 	}
+
+  return nil
 }
 
 func (gc *Gocal) parseLine() (*Line, error, bool) {
