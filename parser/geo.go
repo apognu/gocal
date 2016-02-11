@@ -7,7 +7,7 @@ import (
 )
 
 func ParseGeo(l string) (float64, float64, error) {
-	token := strings.SplitN(l, ",", 2)
+	token := strings.SplitN(l, ";", 2)
 	if len(token) != 2 {
 		return 0.0, 0.0, fmt.Errorf("could not parse geo coordinates: %s", l)
 	}
