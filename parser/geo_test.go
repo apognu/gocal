@@ -7,7 +7,7 @@ import (
 )
 
 func Test_ParseGeo(t *testing.T) {
-	lat, long, err := ParseGeo("32.745,128.45")
+	lat, long, err := ParseGeo("32.745;128.45")
 
 	assert.Equal(t, nil, err)
 
@@ -16,7 +16,7 @@ func Test_ParseGeo(t *testing.T) {
 }
 
 func Test_ParseGeoError(t *testing.T) {
-	lat, long, err := ParseGeo("hello,128.45")
+	lat, long, err := ParseGeo("hello;128.45")
 
 	assert.NotEqual(t, nil, err)
 
