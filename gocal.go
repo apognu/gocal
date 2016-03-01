@@ -22,22 +22,22 @@ func (gc *Gocal) Parse() error {
 	for {
 		l, err, done := gc.parseLine()
 		if err != nil {
-      return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
+			continue
 		}
 
-		if l.Key == "BEGIN" && l.Value == "VEVENT" {
+		if strings.TrimSpace(l.Key) == "BEGIN" && strings.TrimSpace(l.Value) == "VEVENT" {
 			gc.buffer = &Event{}
-		} else if l.Key == "END" && l.Value == "VEVENT" {
+		} else if strings.TrimSpace(l.Key) == "END" && strings.TrimSpace(l.Value) == "VEVENT" {
 			err := gc.checkEvent()
 			if err != nil {
-        return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
+				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
 			}
 
 			gc.Events = append(gc.Events, *gc.buffer)
 		} else {
 			err := gc.parseEvent(l)
 			if err != nil {
-        return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
+				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
 			}
 		}
 
@@ -46,7 +46,7 @@ func (gc *Gocal) Parse() error {
 		}
 	}
 
-  return nil
+	return nil
 }
 
 func (gc *Gocal) parseLine() (*Line, error, bool) {
