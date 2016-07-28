@@ -22,6 +22,9 @@ func (gc *Gocal) Parse() error {
 	for {
 		l, err, done := gc.parseLine()
 		if err != nil {
+      if done {
+        break
+      }
 			continue
 		}
 
