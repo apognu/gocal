@@ -33,7 +33,7 @@ func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 	} else if params["TZID"] != "" {
 		// If TZID param is given, parse in the timezone unless it is not valid
 		format = "20060102T150405"
-		tz, err = time.LoadLocation(params["TZID"])
+		tz, err = time.LoadLocation(strings.Title(strings.ToLower(params["TZID"])))
 		if err != nil {
 			tz, _ = time.LoadLocation("UTC")
 		}
