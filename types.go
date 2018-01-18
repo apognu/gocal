@@ -2,13 +2,37 @@ package gocal
 
 import (
 	"bufio"
+	"strings"
 	"time"
+
+	"github.com/apognu/gocal/parser"
 )
 
 type Gocal struct {
 	scanner *bufio.Scanner
 	Events  []Event
 	buffer  *Event
+	Start   time.Time
+	End     time.Time
+}
+
+func (gc *Gocal) IsInRange(d Event) bool {
+	if (d.Start.Before(gc.Start) && d.End.After(gc.Start)) ||
+		(d.Start.After(gc.Start) && d.End.Before(gc.End)) ||
+		(d.Start.Before(gc.End) && d.End.After(gc.End)) {
+		return true
+	}
+	return false
+}
+
+func (gc *Gocal) IsRecurringInstanceOverriden(instance *Event) bool {
+	for _, e := range gc.Events {
+		rid, _ := parser.ParseTime(e.RecurrenceID, map[string]string{}, parser.TimeStart)
+		if e.Uid == instance.Uid && rid.Equal(*instance.Start) {
+			return true
+		}
+	}
+	return false
 }
 
 type Line struct {
@@ -17,13 +41,22 @@ type Line struct {
 	Value  string
 }
 
+func (l *Line) Is(key, value string) bool {
+	if strings.TrimSpace(l.Key) == key && strings.TrimSpace(l.Value) == value {
+		return true
+	}
+	return false
+}
+
 type Event struct {
 	Uid            string
 	Summary        string
 	Description    string
 	Categories     []string
 	Start          *time.Time
+	StartString    string
 	End            *time.Time
+	EndString      string
 	Stamp          *time.Time
 	Created        *time.Time
 	LastModified   *time.Time
@@ -34,7 +67,10 @@ type Event struct {
 	Attendees      []Attendee
 	Attachments    []Attachment
 	IsRecurring    bool
-	RecurrenceRule string
+	RecurrenceID   string
+	RecurrenceRule map[string]string
+	ExcludeDates   []time.Time
+	Sequence       int
 }
 
 type Geo struct {

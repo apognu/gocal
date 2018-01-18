@@ -15,12 +15,12 @@ func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 	var tz *time.Location
 	format := ""
 
-	if params["VALUE"] == "DATE" {
+	if params["VALUE"] == "DATE" || len(s) == 8 {
 		t, err := time.Parse("20060102", s)
 		if ty == TimeStart {
 			t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 		} else if ty == TimeEnd {
-			t = time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 0, time.UTC)
+			t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC).Add(-1 * time.Second)
 		}
 
 		return &t, err

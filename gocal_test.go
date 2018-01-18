@@ -3,6 +3,7 @@ package gocal
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -44,6 +45,9 @@ END:VEVENT`
 
 func Test_Parse(t *testing.T) {
 	gc := NewParser(strings.NewReader(ics))
+	tz, _ := time.LoadLocation("Europe/Paris")
+	gc.Start = time.Date(2010, 1, 1, 0, 0, 0, 0, tz)
+	gc.End = time.Date(2017, 1, 1, 0, 0, 0, 0, tz)
 	gc.Parse()
 
 	assert.Equal(t, 2, len(gc.Events))
@@ -66,4 +70,50 @@ func Test_ParseLine(t *testing.T) {
 	assert.Equal(t, "HELLO", l.Key)
 	assert.Equal(t, "world", l.Value)
 	assert.Equal(t, map[string]string{"KEY1": "value1", "KEY2": "value2"}, l.Params)
+}
+
+// Event repeats every second monday and tuesday
+// Instance of January, 29th is excluded
+// Instance of January, 1st is changed
+// Event repeats every month on the second day
+const recuringICS = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTART:20180102
+DTEND:20180103
+DTSTAMP:20151116T133227Z
+UID:0001@google.com
+SUMMARY:Every month on the second
+RRULE:FREQ=MONTHLY;BYMONTHDAY=2
+END:VEVENT
+BEGIN:VEVENT
+DTSTART:20180101T090000Z
+DTEND:20180101T110000Z
+DTSTAMP:20151116T133227Z
+UID:0002@google.com
+SUMMARY:Every two weeks on mondays and tuesdays forever
+RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU
+EXDATE;VALUE=DATE:20180129T090000Z
+END:VEVENT
+BEGIN:VEVENT
+DTSTART:20180101T110000Z
+DTEND:20180101T130000Z
+DTSTAMP:20151116T133227Z
+UID:0002@google.com
+RECURRENCE-ID:20180101T090000Z
+SUMMARY:This changed!
+END:VEVENT
+END:VCALENDAR`
+
+func Test_ReccuringRule(t *testing.T) {
+	gc := NewParser(strings.NewReader(recuringICS))
+	tz, _ := time.LoadLocation("Europe/Paris")
+	gc.Start = time.Date(2018, 1, 1, 0, 0, 0, 0, tz)
+	gc.End = time.Date(2018, 2, 5, 23, 59, 59, 0, tz)
+	gc.Parse()
+
+	assert.Equal(t, 7, len(gc.Events))
+
+	assert.Equal(t, "This changed!", gc.Events[0].Summary)
+	assert.Equal(t, "Every month on the second", gc.Events[2].Summary)
+	assert.Equal(t, "Every two weeks on mondays and tuesdays forever", gc.Events[4].Summary)
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/apognu/gocal/parser"
@@ -19,24 +20,33 @@ func NewParser(r io.Reader) *Gocal {
 func (gc *Gocal) Parse() error {
 	gc.scanner.Scan()
 
+	rInstances := make([]Event, 0)
 	for {
 		l, err, done := gc.parseLine()
 		if err != nil {
-      if done {
-        break
-      }
+			if done {
+				break
+			}
 			continue
 		}
 
-		if strings.TrimSpace(l.Key) == "BEGIN" && strings.TrimSpace(l.Value) == "VEVENT" {
+		if l.Is("BEGIN", "VEVENT") {
 			gc.buffer = &Event{}
-		} else if strings.TrimSpace(l.Key) == "END" && strings.TrimSpace(l.Value) == "VEVENT" {
+		} else if l.Is("END", "VEVENT") {
 			err := gc.checkEvent()
 			if err != nil {
 				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
 			}
 
-			gc.Events = append(gc.Events, *gc.buffer)
+			if gc.buffer.IsRecurring {
+				rInstances = append(rInstances, gc.ExpandRecurringEvent(gc.buffer)...)
+			} else {
+				if gc.buffer.End.Before(gc.Start) || gc.buffer.Start.After(gc.End) {
+					continue
+				}
+
+				gc.Events = append(gc.Events, *gc.buffer)
+			}
 		} else {
 			err := gc.parseEvent(l)
 			if err != nil {
@@ -46,6 +56,12 @@ func (gc *Gocal) Parse() error {
 
 		if done {
 			break
+		}
+	}
+
+	for _, i := range rInstances {
+		if !gc.IsRecurringInstanceOverriden(&i) && gc.IsInRange(i) {
+			gc.Events = append(gc.Events, i)
 		}
 	}
 
@@ -111,11 +127,13 @@ func (gc *Gocal) parseEvent(l *Line) error {
 		}
 
 		gc.buffer.Start, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		gc.buffer.StartString = l.Value
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
 	case "DTEND":
 		gc.buffer.End, err = parser.ParseTime(l.Value, l.Params, parser.TimeEnd)
+		gc.buffer.EndString = l.Value
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
@@ -143,12 +161,25 @@ func (gc *Gocal) parseEvent(l *Line) error {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 	case "RRULE":
-		if gc.buffer.RecurrenceRule != "" {
+		if len(gc.buffer.RecurrenceRule) != 0 {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 
 		gc.buffer.IsRecurring = true
-		gc.buffer.RecurrenceRule = l.Value
+		gc.buffer.RecurrenceRule, err = parser.ParseRecurrenceRule(l.Value)
+	case "RECURRENCE-ID":
+		if gc.buffer.Location != "" {
+			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
+		}
+
+		gc.buffer.RecurrenceID = l.Value
+	case "EXDATE":
+		d, err := parser.ParseTime(l.Value, map[string]string{}, parser.TimeStart)
+		if err == nil {
+			gc.buffer.ExcludeDates = append(gc.buffer.ExcludeDates, *d)
+		}
+	case "SEQUENCE":
+		gc.buffer.Sequence, _ = strconv.Atoi(l.Value)
 	case "LOCATION":
 		if gc.buffer.Location != "" {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)

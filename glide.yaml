@@ -1,0 +1,9 @@
+package: github.com/apognu/gocal
+import:
+- package: github.com/satori/go.uuid
+  version: ^1.2.0
+testImport:
+- package: github.com/stretchr/testify
+  version: ^1.2.0
+  subpackages:
+  - assert

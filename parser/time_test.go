@@ -51,7 +51,7 @@ func Test_ParseTimeAllDayStart(t *testing.T) {
 }
 
 func Test_ParseTimeAllDayEnd(t *testing.T) {
-	ti, err := ParseTime("20150910", map[string]string{"VALUE": "DATE"}, TimeEnd)
+	ti, err := ParseTime("20150911", map[string]string{"VALUE": "DATE"}, TimeEnd)
 
 	assert.Equal(t, nil, err)
 
