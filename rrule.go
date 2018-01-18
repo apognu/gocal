@@ -137,7 +137,7 @@ func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 		freqDateStart = &newStart
 		freqDateEnd = &newEnd
 
-		if (count < 0 && weekDaysStart.After(gc.End)) || count == 0 {
+		if (count < 0 && weekDaysStart.After(*gc.End)) || count == 0 {
 			break
 		}
 		if hasUntil && until.Format(YmdHis) <= freqDateStart.Format(YmdHis) {

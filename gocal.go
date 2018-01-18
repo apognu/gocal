@@ -6,6 +6,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/apognu/gocal/parser"
 )
@@ -18,6 +19,15 @@ func NewParser(r io.Reader) *Gocal {
 }
 
 func (gc *Gocal) Parse() error {
+	if gc.Start == nil {
+		start := time.Now().Add(-1 * 24 * time.Hour)
+		gc.Start = &start
+	}
+	if gc.End == nil {
+		end := time.Now().Add(3 * 30 * 24 * time.Hour)
+		gc.End = &end
+	}
+
 	gc.scanner.Scan()
 
 	rInstances := make([]Event, 0)
@@ -41,7 +51,7 @@ func (gc *Gocal) Parse() error {
 			if gc.buffer.IsRecurring {
 				rInstances = append(rInstances, gc.ExpandRecurringEvent(gc.buffer)...)
 			} else {
-				if gc.buffer.End.Before(gc.Start) || gc.buffer.Start.After(gc.End) {
+				if gc.buffer.End.Before(*gc.Start) || gc.buffer.Start.After(*gc.End) {
 					continue
 				}
 

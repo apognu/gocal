@@ -12,14 +12,14 @@ type Gocal struct {
 	scanner *bufio.Scanner
 	Events  []Event
 	buffer  *Event
-	Start   time.Time
-	End     time.Time
+	Start   *time.Time
+	End     *time.Time
 }
 
 func (gc *Gocal) IsInRange(d Event) bool {
-	if (d.Start.Before(gc.Start) && d.End.After(gc.Start)) ||
-		(d.Start.After(gc.Start) && d.End.Before(gc.End)) ||
-		(d.Start.Before(gc.End) && d.End.After(gc.End)) {
+	if (d.Start.Before(*gc.Start) && d.End.After(*gc.Start)) ||
+		(d.Start.After(*gc.Start) && d.End.Before(*gc.End)) ||
+		(d.Start.Before(*gc.End) && d.End.After(*gc.End)) {
 		return true
 	}
 	return false
