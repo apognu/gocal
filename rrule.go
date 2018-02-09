@@ -67,7 +67,7 @@ func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 		weekDaysStart := freqDateStart
 		weekDaysEnd := freqDateEnd
 
-		if !hasByMonth || strings.Contains(fmt.Sprintf("%s", byMonth), weekDaysStart.Format("1")) {
+		if !hasByMonth || strings.Contains(fmt.Sprintf("%d", byMonth), weekDaysStart.Format("1")) {
 			if hasByDay {
 				for i := 0; i < 7; i++ {
 					excluded := false

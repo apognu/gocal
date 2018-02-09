@@ -46,8 +46,10 @@ END:VEVENT`
 func Test_Parse(t *testing.T) {
 	gc := NewParser(strings.NewReader(ics))
 	tz, _ := time.LoadLocation("Europe/Paris")
-	gc.Start = time.Date(2010, 1, 1, 0, 0, 0, 0, tz)
-	gc.End = time.Date(2017, 1, 1, 0, 0, 0, 0, tz)
+	start := time.Date(2010, 1, 1, 0, 0, 0, 0, tz)
+	gc.Start = &start
+	end := time.Date(2017, 1, 1, 0, 0, 0, 0, tz)
+	gc.End = &end
 	gc.Parse()
 
 	assert.Equal(t, 2, len(gc.Events))
@@ -107,8 +109,10 @@ END:VCALENDAR`
 func Test_ReccuringRule(t *testing.T) {
 	gc := NewParser(strings.NewReader(recuringICS))
 	tz, _ := time.LoadLocation("Europe/Paris")
-	gc.Start = time.Date(2018, 1, 1, 0, 0, 0, 0, tz)
-	gc.End = time.Date(2018, 2, 5, 23, 59, 59, 0, tz)
+	start := time.Date(2018, 1, 1, 0, 0, 0, 0, tz)
+	gc.Start = &start
+	end := time.Date(2018, 2, 5, 23, 59, 59, 0, tz)
+	gc.End = &end
 	gc.Parse()
 
 	assert.Equal(t, 7, len(gc.Events))

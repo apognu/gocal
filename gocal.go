@@ -51,6 +51,9 @@ func (gc *Gocal) Parse() error {
 			if gc.buffer.IsRecurring {
 				rInstances = append(rInstances, gc.ExpandRecurringEvent(gc.buffer)...)
 			} else {
+				if gc.buffer.End == nil || gc.buffer.Start == nil {
+					continue
+				}
 				if gc.buffer.End.Before(*gc.Start) || gc.buffer.Start.After(*gc.End) {
 					continue
 				}
