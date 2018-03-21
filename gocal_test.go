@@ -41,6 +41,8 @@ SEQUENCE:1
 STATUS:CONFIRMED
 SUMMARY:The quick brown fox jumps over the lazy dog
 TRANSP:TRANSPARENT
+X-COLOR:#abc123
+X-ADDRESS:432 Main St., San Francisco
 END:VEVENT`
 
 func Test_Parse(t *testing.T) {
@@ -59,6 +61,9 @@ func Test_Parse(t *testing.T) {
 	assert.Equal(t, "Amazing description on two lines", gc.Events[0].Description)
 	assert.Equal(t, 2, len(gc.Events[0].Attendees))
 	assert.Equal(t, "John Connor", gc.Events[0].Attendees[1].Cn)
+	assert.Equal(t, 0, len(gc.Events[0].CustomAttributes))
+	assert.Equal(t, 2, len(gc.Events[1].CustomAttributes))
+	assert.Equal(t, "#abc123", gc.Events[1].CustomAttributes["X-COLOR"])
 }
 
 func Test_ParseLine(t *testing.T) {

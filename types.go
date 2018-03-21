@@ -49,28 +49,29 @@ func (l *Line) Is(key, value string) bool {
 }
 
 type Event struct {
-	Uid            string
-	Summary        string
-	Description    string
-	Categories     []string
-	Start          *time.Time
-	StartString    string
-	End            *time.Time
-	EndString      string
-	Stamp          *time.Time
-	Created        *time.Time
-	LastModified   *time.Time
-	Location       string
-	Geo            *Geo
-	Status         string
-	Organizer      *Organizer
-	Attendees      []Attendee
-	Attachments    []Attachment
-	IsRecurring    bool
-	RecurrenceID   string
-	RecurrenceRule map[string]string
-	ExcludeDates   []time.Time
-	Sequence       int
+	Uid              string
+	Summary          string
+	Description      string
+	Categories       []string
+	Start            *time.Time
+	StartString      string
+	End              *time.Time
+	EndString        string
+	Stamp            *time.Time
+	Created          *time.Time
+	LastModified     *time.Time
+	Location         string
+	Geo              *Geo
+	Status           string
+	Organizer        *Organizer
+	Attendees        []Attendee
+	Attachments      []Attachment
+	IsRecurring      bool
+	RecurrenceID     string
+	RecurrenceRule   map[string]string
+	ExcludeDates     []time.Time
+	Sequence         int
+	CustomAttributes map[string]string
 }
 
 type Geo struct {
