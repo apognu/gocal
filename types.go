@@ -16,6 +16,21 @@ type Gocal struct {
 	End     *time.Time
 }
 
+const (
+	ContextRoot = iota
+	ContextEvent
+	ContextUnknown
+)
+
+type Context struct {
+	Value    int
+	Previous *Context
+}
+
+func (ctx *Context) Nest(value int) *Context {
+	return &Context{Value: value, Previous: ctx}
+}
+
 func (gc *Gocal) IsInRange(d Event) bool {
 	if (d.Start.Before(*gc.Start) && d.End.After(*gc.Start)) ||
 		(d.Start.After(*gc.Start) && d.End.Before(*gc.End)) ||
@@ -46,6 +61,14 @@ func (l *Line) Is(key, value string) bool {
 		return true
 	}
 	return false
+}
+
+func (l *Line) IsKey(key string) bool {
+	return strings.TrimSpace(l.Key) == key
+}
+
+func (l *Line) IsValue(value string) bool {
+	return strings.TrimSpace(l.Value) == value
 }
 
 type Event struct {

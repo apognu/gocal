@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const ics = `HELLO:WORLD
+const ics = `BEGIN:VCALENDAR
 BEGIN:VEVENT
 DTSTART;VALUE=DATE:20141217
 DTEND;VALUE=DATE:20141219
@@ -125,4 +125,50 @@ func Test_ReccuringRule(t *testing.T) {
 	assert.Equal(t, "This changed!", gc.Events[0].Summary)
 	assert.Equal(t, "Every month on the second", gc.Events[2].Summary)
 	assert.Equal(t, "Every two weeks on mondays and tuesdays forever", gc.Events[4].Summary)
+}
+
+const unknownICS = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20180117
+DTEND;VALUE=DATE:20180119
+DTSTAMP:20151116T133227Z
+UID:0001@example.net
+CREATED:20141110T150010Z
+DESCRIPTION:Amazing description on t
+ wo lines
+LAST-MODIFIED:20141110T150010Z
+ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=Antoin
+ e Popineau;X-NUM-GUESTS=0:mailto:antoine.popineau@example.net
+ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=John
+	Connor;X-NUM-GUESTS=0:mailto:john.connor@example.net
+BEGIN:SOMETHING
+UID:0001@example.net
+BEGIN:NESTED
+BEGIN:AGAINNESTED
+UID:0001@example.net
+END:AGAINNESTED
+END:NESTED
+END:SOMETHING
+LOCATION:My Place
+SEQUENCE:0
+STATUS:CONFIRMED
+BEGIN:HELLOWORLD
+END:HELLOWORLD
+SUMMARY:Lorem Ipsum Dolor Sit Amet
+TRANSP:TRANSPARENT
+END:VEVENT`
+
+func Test_UnknownBlocks(t *testing.T) {
+	gc := NewParser(strings.NewReader(unknownICS))
+	tz, _ := time.LoadLocation("Europe/Paris")
+	start := time.Date(2018, 1, 1, 0, 0, 0, 0, tz)
+	gc.Start = &start
+	end := time.Date(2018, 2, 5, 23, 59, 59, 0, tz)
+	gc.End = &end
+	err := gc.Parse()
+
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(gc.Events))
+	assert.Equal(t, "Amazing description on two lines", gc.Events[0].Description)
+	assert.Equal(t, "My Place", gc.Events[0].Location)
 }

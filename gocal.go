@@ -31,6 +31,7 @@ func (gc *Gocal) Parse() error {
 	gc.scanner.Scan()
 
 	rInstances := make([]Event, 0)
+	ctx := &Context{Value: ContextRoot}
 	for {
 		l, err, done := gc.parseLine()
 		if err != nil {
@@ -40,9 +41,20 @@ func (gc *Gocal) Parse() error {
 			continue
 		}
 
-		if l.Is("BEGIN", "VEVENT") {
+		if l.IsValue("VCALENDAR") {
+			continue
+		}
+
+		if ctx.Value == ContextRoot && l.Is("BEGIN", "VEVENT") {
+			ctx = ctx.Nest(ContextEvent)
+
 			gc.buffer = &Event{}
-		} else if l.Is("END", "VEVENT") {
+		} else if ctx.Value == ContextEvent && l.Is("END", "VEVENT") {
+			if ctx.Previous == nil {
+				return fmt.Errorf("got an END:* without matching BEGIN:*")
+			}
+			ctx = ctx.Previous
+
 			err := gc.checkEvent()
 			if err != nil {
 				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
@@ -60,11 +72,20 @@ func (gc *Gocal) Parse() error {
 
 				gc.Events = append(gc.Events, *gc.buffer)
 			}
-		} else {
+		} else if l.IsKey("BEGIN") {
+			ctx = ctx.Nest(ContextUnknown)
+		} else if l.IsKey("END") {
+			if ctx.Previous == nil {
+				return fmt.Errorf("got an END:%s without matching BEGIN:%s", l.Value, l.Value)
+			}
+			ctx = ctx.Previous
+		} else if ctx.Value == ContextEvent {
 			err := gc.parseEvent(l)
 			if err != nil {
 				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
 			}
+		} else {
+			continue
 		}
 
 		if done {
