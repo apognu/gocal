@@ -202,7 +202,7 @@ func (gc *Gocal) parseEvent(l *Line) error {
 		gc.buffer.IsRecurring = true
 		gc.buffer.RecurrenceRule, err = parser.ParseRecurrenceRule(l.Value)
 	case "RECURRENCE-ID":
-		if gc.buffer.Location != "" {
+		if gc.buffer.RecurrenceID != "" {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 
