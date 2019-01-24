@@ -85,6 +85,7 @@ type Event struct {
 	LastModified     *time.Time
 	Location         string
 	Geo              *Geo
+	URL              string
 	Status           string
 	Organizer        *Organizer
 	Attendees        []Attendee

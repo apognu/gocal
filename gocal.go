@@ -263,6 +263,8 @@ func (gc *Gocal) parseEvent(l *Line) error {
 		gc.buffer.Geo = &Geo{lat, long}
 	case "CATEGORIES":
 		gc.buffer.Categories = strings.Split(l.Value, ",")
+	case "URL":
+		gc.buffer.URL = l.Value
 	default:
 		key := strings.ToUpper(l.Key)
 		if strings.HasPrefix(key, "X-") {
