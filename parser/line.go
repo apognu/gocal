@@ -36,10 +36,14 @@ func ParseParameters(p string) (string, map[string]string) {
 	return tokens[0], parameters
 }
 
+// Unescapes strings according to section 3.3.11 of RFC 5545
+// https://tools.ietf.org/html/rfc5545#section-3.3.11
 func UnescapeString(l string) string {
 	l = strings.Replace(l, `\\`, `\`, -1)
 	l = strings.Replace(l, `\;`, `;`, -1)
 	l = strings.Replace(l, `\,`, `,`, -1)
+	l = strings.Replace(l, `\n`, "\n", -1)
+	l = strings.Replace(l, `\N`, "\n", -1)
 
 	return l
 }
