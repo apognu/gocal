@@ -33,7 +33,7 @@ func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 	} else if params["TZID"] != "" {
 		// If TZID param is given, parse in the timezone unless it is not valid
 		format = "20060102T150405"
-		tz, err = time.LoadLocation(strings.Title(strings.ToLower(params["TZID"])))
+		tz, err = LoadTimezone(params["TZID"])
 		if err != nil {
 			tz, _ = time.LoadLocation("UTC")
 		}
@@ -46,4 +46,24 @@ func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 	t, err := time.ParseInLocation(format, s, tz)
 
 	return &t, err
+}
+
+func LoadTimezone(tzid string) (*time.Location, error) {
+	tz, err := time.LoadLocation(tzid)
+	if err == nil {
+		return tz, err
+	}
+
+	tokens := strings.Split(tzid, "_")
+	for idx, t := range tokens {
+		t = strings.ToLower(t)
+
+		if t != "of" && t != "es" {
+			tokens[idx] = strings.Title(t)
+		} else {
+			tokens[idx] = t
+		}
+	}
+
+	return time.LoadLocation(strings.Join(tokens, "_"))
 }
