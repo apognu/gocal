@@ -31,6 +31,26 @@ func main() {
 }
 ```
 
+### Timezones
+
+Timezones specified in `TZID` attributes are parsed and expected to be parsable by Go's `time.LoadLocation()` method. If you have an ICS file using some other form of representing timezones, you can specify the mapping to be used with a callback function:
+
+```go
+var tzMapping = map[string]string{
+	"My Super Zone": "Asia/Tokyo",
+	"My Ultra Zone": "America/Los_Angeles",
+}
+
+gocal.SetTZMapper(func(s string) (*time.Location, error) {
+  if tzid, ok := tzMapping[s]; ok {
+    return time.LoadLocation(tzid)
+  }
+  return nil, fmt.Errorf("")
+})
+```
+
+If this callback returns an `error`, the usual method of parsin the timezone will be tried. If both those methods fail, the date and time will be considered UTC.
+
 ### Custom X-* properties
 
 Any property starting with ```X-``` is considered a custom property and is unmarshalled in the ```event.CustomAttributes``` map of string to string. For instance, a ```X-LABEL``` would be accessible through ```event.CustomAttributes["X-LABEL"]```.

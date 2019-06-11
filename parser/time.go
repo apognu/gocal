@@ -10,6 +10,10 @@ const (
 	TimeEnd
 )
 
+var (
+	TZMapper func(s string) (*time.Location, error)
+)
+
 func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 	var err error
 	var tz *time.Location
@@ -31,9 +35,17 @@ func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 		format = "20060102T150405Z"
 		tz, _ = time.LoadLocation("UTC")
 	} else if params["TZID"] != "" {
+		var err error
+
 		// If TZID param is given, parse in the timezone unless it is not valid
 		format = "20060102T150405"
-		tz, err = LoadTimezone(params["TZID"])
+		if TZMapper != nil {
+			tz, err = TZMapper(params["TZID"])
+		}
+		if TZMapper == nil || err != nil {
+			tz, err = LoadTimezone(params["TZID"])
+		}
+		
 		if err != nil {
 			tz, _ = time.LoadLocation("UTC")
 		}

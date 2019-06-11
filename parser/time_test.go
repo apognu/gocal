@@ -3,6 +3,7 @@ package parser
 import (
 	"testing"
 	"time"
+	"fmt"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -35,6 +36,42 @@ func Test_ParseTimezone(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, exp, tz.String())
 	}
+}
+
+func Test_CustomTimezoneMapper(t *testing.T) {
+	TZMapper = func(s string) (*time.Location, error) {
+		mapping := map[string]string{
+			"test1": "Europe/Paris",
+			"test2": "America/Los_Angeles",
+		}
+
+		if tzid, ok := mapping[s]; ok {		
+			return time.LoadLocation(tzid)
+		}
+		return nil, fmt.Errorf("mapping not found")
+	}
+
+	ti, _ := ParseTime("20150910T135212", map[string]string{"TZID": "test1"}, TimeStart)
+	tz, _ := time.LoadLocation("Europe/Paris")
+
+	assert.Equal(t, tz, ti.Location())
+
+	ti, _ = ParseTime("20150910T135212", map[string]string{"TZID": "test2"}, TimeStart)
+	tz, _ = time.LoadLocation("America/Los_Angeles")
+
+	assert.Equal(t, tz, ti.Location())
+
+	ti, _ = ParseTime("20150910T135212", map[string]string{"TZID": "test3"}, TimeStart)
+	tz, _ = time.LoadLocation("UTC")
+	
+	assert.Equal(t, tz, ti.Location())
+	
+	ti, _ = ParseTime("20150910T135212", map[string]string{"TZID": "Europe/Paris"}, TimeStart)
+	tz, _ = time.LoadLocation("Europe/Paris")
+
+	assert.Equal(t, tz, ti.Location())
+
+	TZMapper = nil
 }
 
 func Test_ParseTimeTZID(t *testing.T) {

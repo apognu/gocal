@@ -291,3 +291,7 @@ func (gc *Gocal) checkEvent() error {
 
 	return nil
 }
+
+func SetTZMapper(cb func(s string) (*time.Location, error)) {
+	parser.TZMapper = cb
+}
