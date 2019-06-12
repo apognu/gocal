@@ -172,3 +172,32 @@ func Test_UnknownBlocks(t *testing.T) {
 	assert.Equal(t, "Amazing description on two lines", gc.Events[0].Description)
 	assert.Equal(t, "My Place", gc.Events[0].Location)
 }
+
+const wrTimezoneICS = `BEGIN:VCALENDAR
+X-WR-TIMEZONE:Asia/Omsk
+BEGIN:VEVENT
+UID:0001@example.net
+DTSTAMP:20190612T135103Z
+DTSTART:20190612T130101Z
+DTEND:20190612T135959Z
+DESCRIPTION:event
+END:VEVENT
+END:VCALENDAR`
+
+func Test_WrTimezone(t *testing.T) {
+	gc := NewParser(strings.NewReader(wrTimezoneICS))
+	tz, _ := time.LoadLocation("Asia/Omsk")
+	start := time.Date(2019, 6, 12, 0, 0, 0, 0, tz)
+	gc.Start = &start
+	end := time.Date(2019, 6, 12, 23, 59, 59, 0, tz)
+	gc.End = &end
+	err := gc.Parse()
+
+	assert.Nil(t, err)
+	t.Log(gc.Events)
+	assert.Equal(t, tz, gc.Timezone)
+	assert.Equal(t, 1, len(gc.Events))
+	assert.Equal(t, time.Date(2019, 6, 12, 19, 51, 3, 0, tz), *gc.Events[0].Stamp)
+	assert.Equal(t, time.Date(2019, 6, 12, 19, 1, 1, 0, tz), *gc.Events[0].Start)
+	assert.Equal(t, time.Date(2019, 6, 12, 19, 59, 59, 0, tz), *gc.Events[0].End)
+}

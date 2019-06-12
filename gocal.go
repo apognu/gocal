@@ -41,11 +41,9 @@ func (gc *Gocal) Parse() error {
 			continue
 		}
 
-		if l.IsValue("VCALENDAR") {
-			continue
-		}
-
-		if ctx.Value == ContextRoot && l.Is("BEGIN", "VEVENT") {
+		if ctx.Value == ContextRoot && l.Is("BEGIN", "VCALENDAR") {
+			ctx = ctx.Nest(ContextCalendar)
+		} else if ctx.Value == ContextCalendar && l.Is("BEGIN", "VEVENT") {
 			ctx = ctx.Nest(ContextEvent)
 
 			gc.buffer = &Event{}
@@ -79,6 +77,11 @@ func (gc *Gocal) Parse() error {
 				return fmt.Errorf("got an END:%s without matching BEGIN:%s", l.Value, l.Value)
 			}
 			ctx = ctx.Previous
+		} else if ctx.Value == ContextCalendar {
+			err := gc.parseCalendar(l)
+			if err != nil {
+				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
+			}
 		} else if ctx.Value == ContextEvent {
 			err := gc.parseEvent(l)
 			if err != nil {
@@ -128,8 +131,23 @@ func (gc *Gocal) parseLine() (*Line, error, bool) {
 	return &Line{Key: attr, Params: params, Value: parser.UnescapeString(strings.TrimPrefix(tokens[1], " "))}, nil, done
 }
 
+func (gc *Gocal) parseCalendar(l *Line) error {
+	var err error
+
+	switch l.Key {
+	case "X-WR-TIMEZONE":
+		gc.Timezone, err = time.LoadLocation(l.Value)
+		if err != nil {
+			return fmt.Errorf("could not recognize %s: %s", l.Key, l.Value)
+		}
+	}
+
+	return nil
+}
+
 func (gc *Gocal) parseEvent(l *Line) error {
 	var err error
+	var calendarTz = gc.getCalendarTz()
 
 	// If this is nil, that means we did not get a BEGIN:VEVENT
 	if gc.buffer == nil {
@@ -160,19 +178,19 @@ func (gc *Gocal) parseEvent(l *Line) error {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 
-		gc.buffer.Start, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		gc.buffer.Start, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, calendarTz)
 		gc.buffer.StartString = l.Value
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
 	case "DTEND":
-		gc.buffer.End, err = parser.ParseTime(l.Value, l.Params, parser.TimeEnd)
+		gc.buffer.End, err = parser.ParseTime(l.Value, l.Params, parser.TimeEnd, calendarTz)
 		gc.buffer.EndString = l.Value
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
 	case "DTSTAMP":
-		gc.buffer.Stamp, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		gc.buffer.Stamp, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, calendarTz)
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
@@ -181,7 +199,7 @@ func (gc *Gocal) parseEvent(l *Line) error {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 
-		gc.buffer.Created, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		gc.buffer.Created, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, calendarTz)
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
@@ -190,7 +208,7 @@ func (gc *Gocal) parseEvent(l *Line) error {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 
-		gc.buffer.LastModified, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		gc.buffer.LastModified, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, calendarTz)
 		if err != nil {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
@@ -208,7 +226,7 @@ func (gc *Gocal) parseEvent(l *Line) error {
 
 		gc.buffer.RecurrenceID = l.Value
 	case "EXDATE":
-		d, err := parser.ParseTime(l.Value, map[string]string{}, parser.TimeStart)
+		d, err := parser.ParseTime(l.Value, map[string]string{}, parser.TimeStart, calendarTz)
 		if err == nil {
 			gc.buffer.ExcludeDates = append(gc.buffer.ExcludeDates, *d)
 		}
