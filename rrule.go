@@ -113,10 +113,10 @@ func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 					}
 				}
 
-				if !excluded {
-					currentCount++
-					count--
+				currentCount++
+				count--
 
+				if !excluded {
 					e := *buf
 					e.Start = weekDaysStart
 					e.End = weekDaysEnd

@@ -127,6 +127,34 @@ func Test_ReccuringRule(t *testing.T) {
 	assert.Equal(t, "Every two weeks on mondays and tuesdays forever", gc.Events[4].Summary)
 }
 
+const recurringICSWithExdate = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:plop
+SUMMARY:Lorem ipsum dolor sit amet
+DTSTAMP:20151116T133227Z
+DTSTART:20190101T130000Z
+DTEND:20190101T140000Z
+RRULE:FREQ=MONTHLY;COUNT=5
+EXDATE:20190201T130000Z
+END:VEVENT
+END:VCALENDAR`
+
+func Test_ReccuringRuleWithExdate(t *testing.T) {
+	start, end := time.Date(2019, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2019, 12, 31, 23, 59, 59, 0, time.Local)
+	
+	gc := NewParser(strings.NewReader(recurringICSWithExdate))
+	gc.Start, gc.End = &start, &end
+	gc.Parse()
+
+	assert.Equal(t, 4, len(gc.Events))
+
+	d := time.Date(2019, 2, 1, 13, 0, 0, 0, time.Local).Format("2006-02-01")
+
+	for _, e := range gc.Events {
+		assert.NotEqual(t, d, e.Start.Format("2016-02-01"))
+	}
+}
+
 const unknownICS = `BEGIN:VCALENDAR
 BEGIN:VEVENT
 DTSTART;VALUE=DATE:20180117
