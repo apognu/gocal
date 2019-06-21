@@ -43,6 +43,8 @@ func (gc *Gocal) Parse() error {
 
 		if ctx.Value == ContextRoot && l.Is("BEGIN", "VCALENDAR") {
 			ctx = ctx.Nest(ContextCalendar)
+		} else if ctx.Value == ContextCalendar && l.Is("BEGIN", "VTIMEZONE") {
+			ctx = ctx.Nest(ContextTimezone)
 		} else if ctx.Value == ContextCalendar && l.Is("BEGIN", "VEVENT") {
 			ctx = ctx.Nest(ContextEvent)
 
@@ -79,6 +81,11 @@ func (gc *Gocal) Parse() error {
 			ctx = ctx.Previous
 		} else if ctx.Value == ContextCalendar {
 			err := gc.parseCalendar(l)
+			if err != nil {
+				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
+			}
+		} else if ctx.Value == ContextTimezone {
+			err := gc.parseTimezone(l)
 			if err != nil {
 				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
 			}
@@ -136,6 +143,20 @@ func (gc *Gocal) parseCalendar(l *Line) error {
 
 	switch l.Key {
 	case "X-WR-TIMEZONE":
+		gc.Timezone, err = time.LoadLocation(l.Value)
+		if err != nil {
+			return fmt.Errorf("could not recognize %s: %s", l.Key, l.Value)
+		}
+	}
+
+	return nil
+}
+
+func (gc *Gocal) parseTimezone(l *Line) error {
+	var err error
+
+	switch l.Key {
+	case "TZID":
 		gc.Timezone, err = time.LoadLocation(l.Value)
 		if err != nil {
 			return fmt.Errorf("could not recognize %s: %s", l.Key, l.Value)

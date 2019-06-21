@@ -61,4 +61,4 @@ I do not pretend this abides by [RFC 5545](https://tools.ietf.org/html/rfc5545),
  * ```RRULE```
  * ```X-*```
 
-Also, we ignore whatever's not a ```VEVENT```.
+Also, we ignore whatever's not a ```VEVENT``` or ```VTIMEZONE```.
