@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/apognu/gocal/parser"
-	"subsplash.io/go/kit/ptr"
 )
 
 const YmdHis = "2006-01-02 15:04:05"
@@ -94,8 +93,10 @@ func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 
 						if strings.Contains(byDay, day) {
 							if currentCount != 0 {
-								weekDaysStart = ptr.Time(weekDaysStart.AddDate(0, 0, (dayRecurrence-1)*7))
-								weekDaysEnd = ptr.Time(weekDaysEnd.AddDate(0, 0, (dayRecurrence-1)*7))
+								recurrWeekDaysStart := weekDaysStart.AddDate(0, 0, (dayRecurrence-1)*7)
+								recurrWeekDaysEnd := weekDaysEnd.AddDate(0, 0, (dayRecurrence-1)*7)
+								weekDaysStart = &recurrWeekDaysStart
+								weekDaysEnd = &recurrWeekDaysEnd
 							}
 							currentCount++
 							count--
