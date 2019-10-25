@@ -42,9 +42,11 @@ func (gc *Gocal) IsInRange(d Event) bool {
 
 func (gc *Gocal) IsRecurringInstanceOverriden(instance *Event) bool {
 	for _, e := range gc.Events {
-		rid, _ := parser.ParseTime(e.RecurrenceID, map[string]string{}, parser.TimeStart)
-		if e.Uid == instance.Uid && rid.Equal(*instance.Start) {
-			return true
+		if e.Uid == instance.Uid {
+			rid, _ := parser.ParseTime(e.RecurrenceID, map[string]string{}, parser.TimeStart)
+			if rid.Equal(*instance.Start) {
+				return true
+			}
 		}
 	}
 	return false
