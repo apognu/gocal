@@ -46,11 +46,10 @@ X-ADDRESS:432 Main St., San Francisco
 END:VEVENT`
 
 func Test_Parse(t *testing.T) {
+	start, end := time.Date(2010, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2017, 1, 1, 0, 0, 0, 0, time.Local)
+
 	gc := NewParser(strings.NewReader(ics))
-	tz, _ := time.LoadLocation("Europe/Paris")
-	start := time.Date(2010, 1, 1, 0, 0, 0, 0, tz)
 	gc.Start = &start
-	end := time.Date(2017, 1, 1, 0, 0, 0, 0, tz)
 	gc.End = &end
 	gc.Parse()
 
@@ -112,11 +111,10 @@ END:VEVENT
 END:VCALENDAR`
 
 func Test_ReccuringRule(t *testing.T) {
+	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2018, 2, 5, 23, 59, 59, 0, time.Local)
+
 	gc := NewParser(strings.NewReader(recuringICS))
-	tz, _ := time.LoadLocation("Europe/Paris")
-	start := time.Date(2018, 1, 1, 0, 0, 0, 0, tz)
 	gc.Start = &start
-	end := time.Date(2018, 2, 5, 23, 59, 59, 0, tz)
 	gc.End = &end
 	gc.Parse()
 
@@ -141,7 +139,7 @@ END:VCALENDAR`
 
 func Test_ReccuringRuleWithExdate(t *testing.T) {
 	start, end := time.Date(2019, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2019, 12, 31, 23, 59, 59, 0, time.Local)
-	
+
 	gc := NewParser(strings.NewReader(recurringICSWithExdate))
 	gc.Start, gc.End = &start, &end
 	gc.Parse()
@@ -187,11 +185,10 @@ TRANSP:TRANSPARENT
 END:VEVENT`
 
 func Test_UnknownBlocks(t *testing.T) {
+	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2018, 2, 5, 23, 59, 59, 0, time.Local)
+
 	gc := NewParser(strings.NewReader(unknownICS))
-	tz, _ := time.LoadLocation("Europe/Paris")
-	start := time.Date(2018, 1, 1, 0, 0, 0, 0, tz)
 	gc.Start = &start
-	end := time.Date(2018, 2, 5, 23, 59, 59, 0, tz)
 	gc.End = &end
 	err := gc.Parse()
 
@@ -199,4 +196,61 @@ func Test_UnknownBlocks(t *testing.T) {
 	assert.Equal(t, 1, len(gc.Events))
 	assert.Equal(t, "Amazing description on two lines", gc.Events[0].Description)
 	assert.Equal(t, "My Place", gc.Events[0].Location)
+}
+
+const invalidICS = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTART;TZID=Europe/Paris:20190101T090000
+DTEND;TZID=Europe/Paris:20190101T110000
+UID:one@gocal
+SUMMARY:Event with custom labels
+END:VEVENT
+
+BEGIN:VEVENT
+DTSTAMP:20151116T133227Z
+DTSTART;TZID=Europe/Paris:20190201T090000
+DTEND;TZID=Europe/Paris:20190201T110000
+UID:two@gocal
+SUMMARY:Second event with custom labels
+END:VEVENT
+END:VCALENDAR`
+
+func Test_InvalidEventFailFeed(t *testing.T) {
+	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2020, 2, 5, 23, 59, 59, 0, time.Local)
+
+	gc := NewParser(strings.NewReader(invalidICS))
+	gc.Start = &start
+	gc.End = &end
+	err := gc.Parse()
+
+	assert.NotNil(t, err)
+	assert.Equal(t, 0, len(gc.Events))
+}
+
+func Test_InvalidEventFailEvent(t *testing.T) {
+	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2020, 2, 5, 23, 59, 59, 0, time.Local)
+
+	gc := NewParser(strings.NewReader(invalidICS))
+	gc.Start = &start
+	gc.End = &end
+	gc.StrictMode = StrictModeFailEvent
+	err := gc.Parse()
+
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(gc.Events))
+}
+
+func Test_InvalidEventFailAttribute(t *testing.T) {
+	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2020, 2, 5, 23, 59, 59, 0, time.Local)
+
+	gc := NewParser(strings.NewReader(invalidICS))
+	gc.Start = &start
+	gc.End = &end
+	gc.StrictMode = StrictModeFailAttribute
+	err := gc.Parse()
+
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(gc.Events))
+	assert.False(t, gc.Events[0].Valid)
+	assert.True(t, gc.Events[1].Valid)
 }

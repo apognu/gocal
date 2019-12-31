@@ -63,6 +63,14 @@ That being said, I try to handle the most common situations for ```RRULE```s, as
 
 This was tested only lightly, I might not cover all the cases.
 
+### Strict mode
+
+By default, any error in parsing an event will result in the whole feed being aborted altogether (this includes missing or invalid attributes). You can change strict mode's behavior by changing the `StrictMode` attribute of the `Gocal` struct, with the following behavior:
+
+ * `StrictModeFailFeed` - **default**, abort parsing of the whole feed
+ * `StrictModeFailEvent` - skip the current event
+ * `StrictModeFailAttribute` - skip parsing of the failing attribute, set the `Valid` attribute of the event to `false`
+
 ## Limitations
 
 I do not pretend this abides by [RFC 5545](https://tools.ietf.org/html/rfc5545), this only covers parts I needed to be parsed for my own personal use. Among other, most property parameters are not handled by the library, and, for now, only the following properties are parsed:

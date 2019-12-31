@@ -24,7 +24,7 @@ BEGIN:VEVENT
 DTSTAMP:20151116T133227Z
 DTSTART;TZID=Europe/Paris:20190201T090000
 DTEND;TZID=Europe/Paris:20190201T110000
-UID:one@gocal
+UID:two@gocal
 SUMMARY:Second event with custom labels
 X-ROOMID:802-127A
 X-COLOR:#ffffff
@@ -33,10 +33,12 @@ END:VCALENDAR
 `
 
 func main() {
-	start, end := time.Now(), time.Now().Add(12*30*24*time.Hour)
+	tz, _ := time.LoadLocation("Europe/Paris")
+	start, end := time.Date(1970, 1, 1, 0, 0, 0, 0, tz), time.Date(3000, 1, 1, 0, 0, 0, 0, tz)
 
 	c := gocal.NewParser(strings.NewReader(ics))
 	c.Start, c.End = &start, &end
+	c.StrictMode = gocal.StrictModeFailAttribute
 	c.Parse()
 
 	for _, e := range c.Events {

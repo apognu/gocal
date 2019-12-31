@@ -8,12 +8,19 @@ import (
 	"github.com/apognu/gocal/parser"
 )
 
+const (
+	StrictModeFailFeed = iota
+	StrictModeFailAttribute
+	StrictModeFailEvent
+)
+
 type Gocal struct {
-	scanner *bufio.Scanner
-	Events  []Event
-	buffer  *Event
-	Start   *time.Time
-	End     *time.Time
+	scanner    *bufio.Scanner
+	Events     []Event
+	StrictMode int
+	buffer     *Event
+	Start      *time.Time
+	End        *time.Time
 }
 
 const (
@@ -98,6 +105,7 @@ type Event struct {
 	ExcludeDates     []time.Time
 	Sequence         int
 	CustomAttributes map[string]string
+	Valid            bool
 }
 
 type Geo struct {

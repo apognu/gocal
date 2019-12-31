@@ -13,8 +13,9 @@ import (
 
 func NewParser(r io.Reader) *Gocal {
 	return &Gocal{
-		scanner: bufio.NewScanner(r),
-		Events:  make([]Event, 0),
+		scanner:    bufio.NewScanner(r),
+		Events:     make([]Event, 0),
+		StrictMode: StrictModeFailFeed,
 	}
 }
 
@@ -48,7 +49,7 @@ func (gc *Gocal) Parse() error {
 		if ctx.Value == ContextRoot && l.Is("BEGIN", "VEVENT") {
 			ctx = ctx.Nest(ContextEvent)
 
-			gc.buffer = &Event{}
+			gc.buffer = &Event{Valid: true}
 		} else if ctx.Value == ContextEvent && l.Is("END", "VEVENT") {
 			if ctx.Previous == nil {
 				return fmt.Errorf("got an END:* without matching BEGIN:*")
@@ -57,7 +58,12 @@ func (gc *Gocal) Parse() error {
 
 			err := gc.checkEvent()
 			if err != nil {
-				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
+				switch gc.StrictMode {
+				case StrictModeFailFeed:
+					return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
+				case StrictModeFailEvent:
+					continue
+				}
 			}
 
 			if gc.buffer.IsRecurring {
@@ -280,12 +286,15 @@ func (gc *Gocal) parseEvent(l *Line) error {
 
 func (gc *Gocal) checkEvent() error {
 	if gc.buffer.Uid == "" {
+		gc.buffer.Valid = false
 		return fmt.Errorf("could not parse event without UID")
 	}
 	if gc.buffer.Start == nil {
+		gc.buffer.Valid = false
 		return fmt.Errorf("could not parse event without DTSTART")
 	}
 	if gc.buffer.Stamp == nil {
+		gc.buffer.Valid = false
 		return fmt.Errorf("could not parse event without DTSTAMP")
 	}
 
