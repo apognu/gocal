@@ -49,8 +49,7 @@ func Test_Parse(t *testing.T) {
 	start, end := time.Date(2010, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2017, 1, 1, 0, 0, 0, 0, time.Local)
 
 	gc := NewParser(strings.NewReader(ics))
-	gc.Start = &start
-	gc.End = &end
+	gc.Start, gc.End = &start, &end
 	gc.Parse()
 
 	assert.Equal(t, 2, len(gc.Events))
@@ -114,8 +113,7 @@ func Test_ReccuringRule(t *testing.T) {
 	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2018, 2, 5, 23, 59, 59, 0, time.Local)
 
 	gc := NewParser(strings.NewReader(recuringICS))
-	gc.Start = &start
-	gc.End = &end
+	gc.Start, gc.End = &start, &end
 	gc.Parse()
 
 	assert.Equal(t, 7, len(gc.Events))
@@ -188,8 +186,7 @@ func Test_UnknownBlocks(t *testing.T) {
 	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2018, 2, 5, 23, 59, 59, 0, time.Local)
 
 	gc := NewParser(strings.NewReader(unknownICS))
-	gc.Start = &start
-	gc.End = &end
+	gc.Start, gc.End = &start, &end
 	err := gc.Parse()
 
 	assert.Nil(t, err)
@@ -219,8 +216,7 @@ func Test_InvalidEventFailFeed(t *testing.T) {
 	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2020, 2, 5, 23, 59, 59, 0, time.Local)
 
 	gc := NewParser(strings.NewReader(invalidICS))
-	gc.Start = &start
-	gc.End = &end
+	gc.Start, gc.End = &start, &end
 	err := gc.Parse()
 
 	assert.NotNil(t, err)
@@ -231,8 +227,7 @@ func Test_InvalidEventFailEvent(t *testing.T) {
 	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2020, 2, 5, 23, 59, 59, 0, time.Local)
 
 	gc := NewParser(strings.NewReader(invalidICS))
-	gc.Start = &start
-	gc.End = &end
+	gc.Start, gc.End = &start, &end
 	gc.StrictMode = StrictModeFailEvent
 	err := gc.Parse()
 
@@ -244,8 +239,7 @@ func Test_InvalidEventFailAttribute(t *testing.T) {
 	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2020, 2, 5, 23, 59, 59, 0, time.Local)
 
 	gc := NewParser(strings.NewReader(invalidICS))
-	gc.Start = &start
-	gc.End = &end
+	gc.Start, gc.End = &start, &end
 	gc.StrictMode = StrictModeFailAttribute
 	err := gc.Parse()
 
@@ -253,4 +247,29 @@ func Test_InvalidEventFailAttribute(t *testing.T) {
 	assert.Equal(t, 2, len(gc.Events))
 	assert.False(t, gc.Events[0].Valid)
 	assert.True(t, gc.Events[1].Valid)
+}
+
+const durationICS = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTAMP:20151116T133227Z
+DURATION:P1Y5DT1H10M30S
+DTSTART;TZID=Europe/Paris:20190101T090000
+UID:one@gocal
+SUMMARY:Event with custom labels
+END:VEVENT`
+
+func Test_DurationEvent(t *testing.T) {
+	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2025, 2, 5, 23, 59, 59, 0, time.Local)
+
+	gc := NewParser(strings.NewReader(durationICS))
+	gc.Start, gc.End = &start, &end
+	err := gc.Parse()
+
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(gc.Events))
+	assert.Equal(t, gc.Events[0].End.Year(), 2020)
+	assert.Equal(t, gc.Events[0].End.Day(), 6)
+	assert.Equal(t, gc.Events[0].End.Hour(), 10)
+	assert.Equal(t, gc.Events[0].End.Minute(), 10)
+	assert.Equal(t, gc.Events[0].End.Second(), 30)
 }

@@ -3,6 +3,8 @@ package parser
 import (
 	"strings"
 	"time"
+
+	duration "github.com/ChannelMeter/iso8601duration"
 )
 
 const (
@@ -45,7 +47,7 @@ func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 		if TZMapper == nil || err != nil {
 			tz, err = LoadTimezone(params["TZID"])
 		}
-		
+
 		if err != nil {
 			tz, _ = time.LoadLocation("UTC")
 		}
@@ -58,6 +60,15 @@ func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 	t, err := time.ParseInLocation(format, s, tz)
 
 	return &t, err
+}
+
+func ParseDuration(s string) (*time.Duration, error) {
+	d, err := duration.FromString(s)
+	if err != nil {
+		return nil, err
+	}
+	dur := d.ToDuration()
+	return &dur, nil
 }
 
 func LoadTimezone(tzid string) (*time.Location, error) {

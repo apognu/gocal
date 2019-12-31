@@ -81,6 +81,8 @@ func (l *Line) IsValue(value string) bool {
 }
 
 type Event struct {
+	delayed []*Line
+
 	Uid              string
 	Summary          string
 	Description      string
@@ -89,6 +91,7 @@ type Event struct {
 	StartString      string
 	End              *time.Time
 	EndString        string
+	Duration         *time.Duration
 	Stamp            *time.Time
 	Created          *time.Time
 	LastModified     *time.Time
