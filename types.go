@@ -17,6 +17,7 @@ const (
 type Gocal struct {
 	scanner    *bufio.Scanner
 	Events     []Event
+	SkipBounds bool
 	StrictMode int
 	buffer     *Event
 	Start      *time.Time

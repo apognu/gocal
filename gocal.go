@@ -16,6 +16,7 @@ func NewParser(r io.Reader) *Gocal {
 		scanner:    bufio.NewScanner(r),
 		Events:     make([]Event, 0),
 		StrictMode: StrictModeFailFeed,
+		SkipBounds: false,
 	}
 }
 
@@ -76,7 +77,7 @@ func (gc *Gocal) Parse() error {
 				if gc.buffer.End == nil || gc.buffer.Start == nil {
 					continue
 				}
-				if gc.buffer.End.Before(*gc.Start) || gc.buffer.Start.After(*gc.End) {
+				if !gc.SkipBounds && !gc.IsInRange(*gc.buffer) {
 					continue
 				}
 

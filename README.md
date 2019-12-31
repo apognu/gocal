@@ -4,7 +4,7 @@ Fast (and opinionated) ICAL parser in Golang.
 
 Gocal takes an io.Reader and produces an array of `Event`s from it.
 
-Event are parsed between two given dates (`Gocal.Start` and `Gocal.End`, 3 months by default). Any event outside this range will be ignored.
+Event are parsed between two given dates (`Gocal.Start` and `Gocal.End`, 3 months by default). Any event outside this range will be ignored. This behavior can be disabled by setting `SkipBounds` to `true` in the `Gocal` struct. Please note that the behavior will still be enacted for recurring event, to prevent infinite parsing.
 
 ## Usage
 
@@ -37,8 +37,8 @@ Timezones specified in `TZID` attributes are parsed and expected to be parsable 
 
 ```go
 var tzMapping = map[string]string{
-	"My Super Zone": "Asia/Tokyo",
-	"My Ultra Zone": "America/Los_Angeles",
+  "My Super Zone": "Asia/Tokyo",
+  "My Ultra Zone": "America/Los_Angeles",
 }
 
 gocal.SetTZMapper(func(s string) (*time.Location, error) {
@@ -49,7 +49,7 @@ gocal.SetTZMapper(func(s string) (*time.Location, error) {
 })
 ```
 
-If this callback returns an `error`, the usual method of parsin the timezone will be tried. If both those methods fail, the date and time will be considered UTC.
+If this callback returns an `error`, the usual method of parsing the timezone will be tried. If both those methods fail, the date and time will be considered UTC.
 
 ### Custom X-* properties
 
