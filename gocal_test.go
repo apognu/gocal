@@ -254,6 +254,7 @@ BEGIN:VEVENT
 DTSTAMP:20151116T133227Z
 DURATION:P1Y5DT1H10M30S
 DTSTART;TZID=Europe/Paris:20190101T090000
+DTEND;TZID=Europe/Paris:20190101T110000
 UID:one@gocal
 SUMMARY:Event with custom labels
 END:VEVENT`
@@ -267,9 +268,12 @@ func Test_DurationEvent(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(gc.Events))
-	assert.Equal(t, gc.Events[0].End.Year(), 2020)
-	assert.Equal(t, gc.Events[0].End.Day(), 6)
-	assert.Equal(t, gc.Events[0].End.Hour(), 10)
-	assert.Equal(t, gc.Events[0].End.Minute(), 10)
-	assert.Equal(t, gc.Events[0].End.Second(), 30)
+
+	if len(gc.Events) == 1 {
+		assert.Equal(t, gc.Events[0].End.Year(), 2020)
+		assert.Equal(t, gc.Events[0].End.Day(), 6)
+		assert.Equal(t, gc.Events[0].End.Hour(), 10)
+		assert.Equal(t, gc.Events[0].End.Minute(), 10)
+		assert.Equal(t, gc.Events[0].End.Second(), 30)
+	}
 }
