@@ -276,3 +276,28 @@ func Test_DurationEvent(t *testing.T) {
 		assert.Equal(t, gc.Events[0].End.Second(), 30)
 	}
 }
+
+const newlineICS = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:0001@example.net
+DTSTAMP:20170419T172300Z
+DTSTART;VALUE=DATE:20190419
+DTEND;VALUE=DATE:20190419
+DESCRIPTION:line1\nline2\Nline3
+END:VEVENT
+END:VCALENDAR`
+
+func Test_Newline(t *testing.T) {
+	gc := NewParser(strings.NewReader(newlineICS))
+	tz, _ := time.LoadLocation("Asia/Omsk")
+	start := time.Date(2019, 4, 19, 0, 0, 0, 0, tz)
+	gc.Start = &start
+	end := time.Date(2019, 4, 19, 23, 59, 59, 0, tz)
+	gc.End = &end
+	err := gc.Parse()
+
+	assert.Nil(t, err)
+	t.Log(gc.Events)
+	assert.Equal(t, 1, len(gc.Events))
+	assert.Equal(t, "line1\nline2\nline3", gc.Events[0].Description)
+}

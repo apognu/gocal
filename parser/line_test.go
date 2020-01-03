@@ -20,3 +20,10 @@ func Test_UnescapeString(t *testing.T) {
 
 	assert.Equal(t, `Hello, world; lorem \ipsum.`, l)
 }
+
+func Test_UnescapeStringWithNewline(t *testing.T) {
+	l := `line1\nline2\Nline3`
+	l = UnescapeString(l)
+
+	assert.Equal(t, "line1\nline2\nline3", l)
+}
