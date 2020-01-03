@@ -13,8 +13,10 @@ import (
 
 func NewParser(r io.Reader) *Gocal {
 	return &Gocal{
-		scanner: bufio.NewScanner(r),
-		Events:  make([]Event, 0),
+		scanner:    bufio.NewScanner(r),
+		Events:     make([]Event, 0),
+		StrictMode: StrictModeFailFeed,
+		SkipBounds: false,
 	}
 }
 
@@ -48,16 +50,25 @@ func (gc *Gocal) Parse() error {
 		if ctx.Value == ContextRoot && l.Is("BEGIN", "VEVENT") {
 			ctx = ctx.Nest(ContextEvent)
 
-			gc.buffer = &Event{}
+			gc.buffer = &Event{Valid: true, delayed: make([]*Line, 0)}
 		} else if ctx.Value == ContextEvent && l.Is("END", "VEVENT") {
 			if ctx.Previous == nil {
 				return fmt.Errorf("got an END:* without matching BEGIN:*")
 			}
 			ctx = ctx.Previous
 
+			for _, d := range gc.buffer.delayed {
+				gc.parseEvent(d)
+			}
+
 			err := gc.checkEvent()
 			if err != nil {
-				return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
+				switch gc.StrictMode {
+				case StrictModeFailFeed:
+					return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
+				case StrictModeFailEvent:
+					continue
+				}
 			}
 
 			if gc.buffer.IsRecurring {
@@ -66,7 +77,7 @@ func (gc *Gocal) Parse() error {
 				if gc.buffer.End == nil || gc.buffer.Start == nil {
 					continue
 				}
-				if gc.buffer.End.Before(*gc.Start) || gc.buffer.Start.After(*gc.End) {
+				if !gc.SkipBounds && !gc.IsInRange(*gc.buffer) {
 					continue
 				}
 
@@ -171,6 +182,19 @@ func (gc *Gocal) parseEvent(l *Line) error {
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
+	case "DURATION":
+		if gc.buffer.Start == nil {
+			gc.buffer.delayed = append(gc.buffer.delayed, l)
+			return nil
+		}
+
+		duration, err := parser.ParseDuration(l.Value)
+		if err != nil {
+			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
+		}
+		gc.buffer.Duration = duration
+		end := gc.buffer.Start.Add(*duration)
+		gc.buffer.End = &end
 	case "DTSTAMP":
 		gc.buffer.Stamp, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
 		if err != nil {
@@ -280,14 +304,24 @@ func (gc *Gocal) parseEvent(l *Line) error {
 
 func (gc *Gocal) checkEvent() error {
 	if gc.buffer.Uid == "" {
+		gc.buffer.Valid = false
 		return fmt.Errorf("could not parse event without UID")
 	}
 	if gc.buffer.Start == nil {
+		gc.buffer.Valid = false
 		return fmt.Errorf("could not parse event without DTSTART")
 	}
 	if gc.buffer.Stamp == nil {
+		gc.buffer.Valid = false
 		return fmt.Errorf("could not parse event without DTSTAMP")
+	}
+	if gc.buffer.EndString != "" && gc.buffer.Duration != nil {
+		return fmt.Errorf("only one of DTEND and DURATION must be provided")
 	}
 
 	return nil
+}
+
+func SetTZMapper(cb func(s string) (*time.Location, error)) {
+	parser.TZMapper = cb
 }

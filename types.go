@@ -8,12 +8,20 @@ import (
 	"github.com/apognu/gocal/parser"
 )
 
+const (
+	StrictModeFailFeed = iota
+	StrictModeFailAttribute
+	StrictModeFailEvent
+)
+
 type Gocal struct {
-	scanner *bufio.Scanner
-	Events  []Event
-	buffer  *Event
-	Start   *time.Time
-	End     *time.Time
+	scanner    *bufio.Scanner
+	Events     []Event
+	SkipBounds bool
+	StrictMode int
+	buffer     *Event
+	Start      *time.Time
+	End        *time.Time
 }
 
 const (
@@ -42,9 +50,11 @@ func (gc *Gocal) IsInRange(d Event) bool {
 
 func (gc *Gocal) IsRecurringInstanceOverriden(instance *Event) bool {
 	for _, e := range gc.Events {
-		rid, _ := parser.ParseTime(e.RecurrenceID, map[string]string{}, parser.TimeStart)
-		if e.Uid == instance.Uid && rid.Equal(*instance.Start) {
-			return true
+		if e.Uid == instance.Uid {
+			rid, _ := parser.ParseTime(e.RecurrenceID, map[string]string{}, parser.TimeStart)
+			if rid.Equal(*instance.Start) {
+				return true
+			}
 		}
 	}
 	return false
@@ -72,6 +82,8 @@ func (l *Line) IsValue(value string) bool {
 }
 
 type Event struct {
+	delayed []*Line
+
 	Uid              string
 	Summary          string
 	Description      string
@@ -80,6 +92,7 @@ type Event struct {
 	StartString      string
 	End              *time.Time
 	EndString        string
+	Duration         *time.Duration
 	Stamp            *time.Time
 	Created          *time.Time
 	LastModified     *time.Time
@@ -96,6 +109,7 @@ type Event struct {
 	ExcludeDates     []time.Time
 	Sequence         int
 	CustomAttributes map[string]string
+	Valid            bool
 }
 
 type Geo struct {
