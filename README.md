@@ -65,7 +65,7 @@ This was tested only lightly, I might not cover all the cases.
 
 ### Strict mode
 
-By default, any error in parsing an event will result in the whole feed being aborted altogether (this includes missing or invalid attributes). You can change strict mode's behavior by changing the `StrictMode` attribute of the `Gocal` struct, with the following behavior:
+By default, any error in parsing an event will result in the whole feed being aborted altogether (this includes missing or invalid attributes). You can change strict mode's behavior by changing the `Strict.Mode` attribute of the `Gocal` struct, with the following behavior:
 
  * `StrictModeFailFeed` - **default**, abort parsing of the whole feed
  * `StrictModeFailEvent` - skip the current event

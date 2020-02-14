@@ -1,15 +1,15 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 	"time"
-	"fmt"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_ParseTimeUTC(t *testing.T) {
-	ti, err := ParseTime("20150910T135212Z", map[string]string{}, TimeStart)
+	ti, err := ParseTime("20150910T135212Z", map[string]string{}, TimeStart, false)
 
 	assert.Equal(t, nil, err)
 
@@ -45,28 +45,28 @@ func Test_CustomTimezoneMapper(t *testing.T) {
 			"test2": "America/Los_Angeles",
 		}
 
-		if tzid, ok := mapping[s]; ok {		
+		if tzid, ok := mapping[s]; ok {
 			return time.LoadLocation(tzid)
 		}
 		return nil, fmt.Errorf("mapping not found")
 	}
 
-	ti, _ := ParseTime("20150910T135212", map[string]string{"TZID": "test1"}, TimeStart)
+	ti, _ := ParseTime("20150910T135212", map[string]string{"TZID": "test1"}, TimeStart, false)
 	tz, _ := time.LoadLocation("Europe/Paris")
 
 	assert.Equal(t, tz, ti.Location())
 
-	ti, _ = ParseTime("20150910T135212", map[string]string{"TZID": "test2"}, TimeStart)
+	ti, _ = ParseTime("20150910T135212", map[string]string{"TZID": "test2"}, TimeStart, false)
 	tz, _ = time.LoadLocation("America/Los_Angeles")
 
 	assert.Equal(t, tz, ti.Location())
 
-	ti, _ = ParseTime("20150910T135212", map[string]string{"TZID": "test3"}, TimeStart)
+	ti, _ = ParseTime("20150910T135212", map[string]string{"TZID": "test3"}, TimeStart, false)
 	tz, _ = time.LoadLocation("UTC")
-	
+
 	assert.Equal(t, tz, ti.Location())
-	
-	ti, _ = ParseTime("20150910T135212", map[string]string{"TZID": "Europe/Paris"}, TimeStart)
+
+	ti, _ = ParseTime("20150910T135212", map[string]string{"TZID": "Europe/Paris"}, TimeStart, false)
 	tz, _ = time.LoadLocation("Europe/Paris")
 
 	assert.Equal(t, tz, ti.Location())
@@ -75,7 +75,7 @@ func Test_CustomTimezoneMapper(t *testing.T) {
 }
 
 func Test_ParseTimeTZID(t *testing.T) {
-	ti, err := ParseTime("20150910T135212", map[string]string{"TZID": "Europe/Paris"}, TimeStart)
+	ti, err := ParseTime("20150910T135212", map[string]string{"TZID": "Europe/Paris"}, TimeStart, false)
 	tz, _ := time.LoadLocation("Europe/Paris")
 
 	assert.Equal(t, nil, err)
@@ -90,7 +90,7 @@ func Test_ParseTimeTZID(t *testing.T) {
 }
 
 func Test_ParseTimeAllDayStart(t *testing.T) {
-	ti, err := ParseTime("20150910", map[string]string{"VALUE": "DATE"}, TimeStart)
+	ti, err := ParseTime("20150910", map[string]string{"VALUE": "DATE"}, TimeStart, false)
 
 	assert.Equal(t, nil, err)
 
@@ -104,13 +104,27 @@ func Test_ParseTimeAllDayStart(t *testing.T) {
 }
 
 func Test_ParseTimeAllDayEnd(t *testing.T) {
-	ti, err := ParseTime("20150911", map[string]string{"VALUE": "DATE"}, TimeEnd)
+	ti, err := ParseTime("20150911", map[string]string{"VALUE": "DATE"}, TimeEnd, false)
 
 	assert.Equal(t, nil, err)
 
 	assert.Equal(t, 10, ti.Day())
 	assert.Equal(t, time.September, ti.Month())
 	assert.Equal(t, 2015, ti.Year())
+	assert.Equal(t, 23, ti.Hour())
+	assert.Equal(t, 59, ti.Minute())
+	assert.Equal(t, 59, ti.Second())
+	assert.Equal(t, time.UTC, ti.Location())
+}
+
+func Test_ParseTimeAllDayInclusiveEnd(t *testing.T) {
+	ti, err := ParseTime("20150911", map[string]string{"VALUE": "DATE"}, TimeEnd, true)
+
+	assert.Equal(t, nil, err)
+
+	assert.Equal(t, 2015, ti.Year())
+	assert.Equal(t, time.September, ti.Month())
+	assert.Equal(t, 11, ti.Day())
 	assert.Equal(t, 23, ti.Hour())
 	assert.Equal(t, 59, ti.Minute())
 	assert.Equal(t, 59, ti.Second())

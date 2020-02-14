@@ -200,7 +200,7 @@ BEGIN:VEVENT
 DTSTART;TZID=Europe/Paris:20190101T090000
 DTEND;TZID=Europe/Paris:20190101T110000
 UID:one@gocal
-SUMMARY:Event with custom labels
+SUMMARY:Invalid event without DTSTAMP
 END:VEVENT
 
 BEGIN:VEVENT
@@ -208,7 +208,7 @@ DTSTAMP:20151116T133227Z
 DTSTART;TZID=Europe/Paris:20190201T090000
 DTEND;TZID=Europe/Paris:20190201T110000
 UID:two@gocal
-SUMMARY:Second event with custom labels
+SUMMARY:Valid event
 END:VEVENT
 END:VCALENDAR`
 
@@ -228,7 +228,9 @@ func Test_InvalidEventFailEvent(t *testing.T) {
 
 	gc := NewParser(strings.NewReader(invalidICS))
 	gc.Start, gc.End = &start, &end
-	gc.StrictMode = StrictModeFailEvent
+	gc.Strict = StrictParams{
+		Mode: StrictModeFailEvent,
+	}
 	err := gc.Parse()
 
 	assert.Nil(t, err)
@@ -240,7 +242,9 @@ func Test_InvalidEventFailAttribute(t *testing.T) {
 
 	gc := NewParser(strings.NewReader(invalidICS))
 	gc.Start, gc.End = &start, &end
-	gc.StrictMode = StrictModeFailAttribute
+	gc.Strict = StrictParams{
+		Mode: StrictModeFailAttribute,
+	}
 	err := gc.Parse()
 
 	assert.Nil(t, err)
@@ -255,7 +259,7 @@ DTSTAMP:20151116T133227Z
 DURATION:P1Y5DT1H10M30S
 DTSTART;TZID=Europe/Paris:20190101T090000
 UID:one@gocal
-SUMMARY:Event with custom labels
+SUMMARY:Event with duration instead of start/end
 END:VEVENT`
 
 func Test_DurationEvent(t *testing.T) {
@@ -274,5 +278,48 @@ func Test_DurationEvent(t *testing.T) {
 		assert.Equal(t, gc.Events[0].End.Hour(), 10)
 		assert.Equal(t, gc.Events[0].End.Minute(), 10)
 		assert.Equal(t, gc.Events[0].End.Second(), 30)
+	}
+}
+
+const dateICS = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTAMP:20151116T133227Z
+DTSTART;VALUE=DATE:20190101
+DTEND;VALUE=DATE:20190101
+UID:one@gocal
+SUMMARY:Event with inclusive same day event
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20151116T133227Z
+DTSTART;VALUE=DATE:20190101
+DTEND;VALUE=DATE:20190103
+UID:two@gocal
+SUMMARY:Event with exclusive same day event
+END:VEVENT`
+
+func Test_DateEvent(t *testing.T) {
+	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2025, 2, 5, 23, 59, 59, 0, time.Local)
+
+	gc := NewParser(strings.NewReader(dateICS))
+	gc.Start, gc.End = &start, &end
+	err := gc.Parse()
+
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(gc.Events))
+
+	if len(gc.Events) == 2 {
+		assert.Equal(t, gc.Events[0].End.Year(), 2019)
+		assert.Equal(t, gc.Events[0].End.Month(), time.January)
+		assert.Equal(t, gc.Events[0].End.Day(), 1)
+		assert.Equal(t, gc.Events[0].End.Hour(), 23)
+		assert.Equal(t, gc.Events[0].End.Minute(), 59)
+		assert.Equal(t, gc.Events[0].End.Second(), 59)
+
+		assert.Equal(t, gc.Events[1].End.Year(), 2019)
+		assert.Equal(t, gc.Events[1].End.Month(), time.January)
+		assert.Equal(t, gc.Events[1].End.Day(), 2)
+		assert.Equal(t, gc.Events[1].End.Hour(), 23)
+		assert.Equal(t, gc.Events[1].End.Minute(), 59)
+		assert.Equal(t, gc.Events[1].End.Second(), 59)
 	}
 }

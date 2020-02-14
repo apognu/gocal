@@ -13,9 +13,11 @@ import (
 
 func NewParser(r io.Reader) *Gocal {
 	return &Gocal{
-		scanner:    bufio.NewScanner(r),
-		Events:     make([]Event, 0),
-		StrictMode: StrictModeFailFeed,
+		scanner: bufio.NewScanner(r),
+		Events:  make([]Event, 0),
+		Strict: StrictParams{
+			Mode: StrictModeFailFeed,
+		},
 		SkipBounds: false,
 	}
 }
@@ -61,9 +63,18 @@ func (gc *Gocal) Parse() error {
 				gc.parseEvent(d)
 			}
 
+			// Some tools return single full day events as inclusive (same DTSTART
+			// and DTEND) which goes against RFC. Standard tools still handle those
+			// as events spanning 24 hours.
+			if gc.buffer.RawStart.Value == gc.buffer.RawEnd.Value {
+				if value, ok := gc.buffer.RawEnd.Params["VALUE"]; ok && value == "DATE" {
+					gc.buffer.End, err = parser.ParseTime(gc.buffer.RawEnd.Value, gc.buffer.RawEnd.Params, parser.TimeEnd, true)
+				}
+			}
+
 			err := gc.checkEvent()
 			if err != nil {
-				switch gc.StrictMode {
+				switch gc.Strict.Mode {
 				case StrictModeFailFeed:
 					return fmt.Errorf(fmt.Sprintf("gocal error: %s", err))
 				case StrictModeFailEvent:
@@ -171,14 +182,14 @@ func (gc *Gocal) parseEvent(l *Line) error {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 
-		gc.buffer.Start, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
-		gc.buffer.StartString = l.Value
+		gc.buffer.Start, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, false)
+		gc.buffer.RawStart = RawDate{Value: l.Value, Params: l.Params}
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
 	case "DTEND":
-		gc.buffer.End, err = parser.ParseTime(l.Value, l.Params, parser.TimeEnd)
-		gc.buffer.EndString = l.Value
+		gc.buffer.End, err = parser.ParseTime(l.Value, l.Params, parser.TimeEnd, false)
+		gc.buffer.RawEnd = RawDate{Value: l.Value, Params: l.Params}
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
@@ -196,7 +207,7 @@ func (gc *Gocal) parseEvent(l *Line) error {
 		end := gc.buffer.Start.Add(*duration)
 		gc.buffer.End = &end
 	case "DTSTAMP":
-		gc.buffer.Stamp, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		gc.buffer.Stamp, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, false)
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
@@ -205,7 +216,7 @@ func (gc *Gocal) parseEvent(l *Line) error {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 
-		gc.buffer.Created, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		gc.buffer.Created, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, false)
 		if err != nil {
 			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
 		}
@@ -214,7 +225,7 @@ func (gc *Gocal) parseEvent(l *Line) error {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
 
-		gc.buffer.LastModified, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart)
+		gc.buffer.LastModified, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, false)
 		if err != nil {
 			return fmt.Errorf("could not parse duplicate %s: %s", l.Key, l.Value)
 		}
@@ -232,7 +243,7 @@ func (gc *Gocal) parseEvent(l *Line) error {
 
 		gc.buffer.RecurrenceID = l.Value
 	case "EXDATE":
-		d, err := parser.ParseTime(l.Value, map[string]string{}, parser.TimeStart)
+		d, err := parser.ParseTime(l.Value, map[string]string{}, parser.TimeStart, false)
 		if err == nil {
 			gc.buffer.ExcludeDates = append(gc.buffer.ExcludeDates, *d)
 		}
@@ -315,7 +326,7 @@ func (gc *Gocal) checkEvent() error {
 		gc.buffer.Valid = false
 		return fmt.Errorf("could not parse event without DTSTAMP")
 	}
-	if gc.buffer.EndString != "" && gc.buffer.Duration != nil {
+	if gc.buffer.RawEnd.Value != "" && gc.buffer.Duration != nil {
 		return fmt.Errorf("only one of DTEND and DURATION must be provided")
 	}
 

@@ -13,7 +13,7 @@ const YmdHis = "2006-01-02 15:04:05"
 func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 	freq := buf.RecurrenceRule["FREQ"]
 
-	until, err := parser.ParseTime(buf.RecurrenceRule["UNTIL"], map[string]string{}, parser.TimeEnd)
+	until, err := parser.ParseTime(buf.RecurrenceRule["UNTIL"], map[string]string{}, parser.TimeEnd, false)
 	hasUntil := err == nil
 
 	count, err := strconv.Atoi(buf.RecurrenceRule["COUNT"])

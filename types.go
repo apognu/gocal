@@ -14,11 +14,15 @@ const (
 	StrictModeFailEvent
 )
 
+type StrictParams struct {
+	Mode int
+}
+
 type Gocal struct {
 	scanner    *bufio.Scanner
 	Events     []Event
 	SkipBounds bool
-	StrictMode int
+	Strict     StrictParams
 	buffer     *Event
 	Start      *time.Time
 	End        *time.Time
@@ -51,7 +55,7 @@ func (gc *Gocal) IsInRange(d Event) bool {
 func (gc *Gocal) IsRecurringInstanceOverriden(instance *Event) bool {
 	for _, e := range gc.Events {
 		if e.Uid == instance.Uid {
-			rid, _ := parser.ParseTime(e.RecurrenceID, map[string]string{}, parser.TimeStart)
+			rid, _ := parser.ParseTime(e.RecurrenceID, map[string]string{}, parser.TimeStart, false)
 			if rid.Equal(*instance.Start) {
 				return true
 			}
@@ -81,6 +85,11 @@ func (l *Line) IsValue(value string) bool {
 	return strings.TrimSpace(l.Value) == value
 }
 
+type RawDate struct {
+	Params map[string]string
+	Value  string
+}
+
 type Event struct {
 	delayed []*Line
 
@@ -89,9 +98,9 @@ type Event struct {
 	Description      string
 	Categories       []string
 	Start            *time.Time
-	StartString      string
+	RawStart         RawDate
 	End              *time.Time
-	EndString        string
+	RawEnd           RawDate
 	Duration         *time.Duration
 	Stamp            *time.Time
 	Created          *time.Time

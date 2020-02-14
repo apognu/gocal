@@ -16,9 +16,10 @@ var (
 	TZMapper func(s string) (*time.Location, error)
 )
 
-func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
+func ParseTime(s string, params map[string]string, ty int, allday bool) (*time.Time, error) {
 	var err error
 	var tz *time.Location
+
 	format := ""
 
 	if params["VALUE"] == "DATE" || len(s) == 8 {
@@ -26,7 +27,11 @@ func ParseTime(s string, params map[string]string, ty int) (*time.Time, error) {
 		if ty == TimeStart {
 			t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 		} else if ty == TimeEnd {
-			t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC).Add(-1 * time.Second)
+			if allday {
+				t = time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 999, time.UTC)
+			} else {
+				t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC).Add(-1 * time.Millisecond)
+			}
 		}
 
 		return &t, err

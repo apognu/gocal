@@ -38,7 +38,9 @@ func main() {
 
 	c := gocal.NewParser(strings.NewReader(ics))
 	c.Start, c.End = &start, &end
-	c.StrictMode = gocal.StrictModeFailAttribute
+	c.Strict = gocal.StrictParams{
+		Mode: gocal.StrictModeFailAttribute,
+	}
 	c.Parse()
 
 	for _, e := range c.Events {
