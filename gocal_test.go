@@ -9,6 +9,7 @@ import (
 )
 
 const ics = `BEGIN:VCALENDAR
+METHOD:COUNTER
 BEGIN:VEVENT
 DTSTART;VALUE=DATE:20141217
 DTEND;VALUE=DATE:20141219
@@ -54,6 +55,7 @@ func Test_Parse(t *testing.T) {
 
 	assert.Equal(t, 2, len(gc.Events))
 
+	assert.Equal(t, "COUNTER", gc.Method)
 	assert.Equal(t, "Lorem Ipsum Dolor Sit Amet", gc.Events[0].Summary)
 	assert.Equal(t, "0001@example.net", gc.Events[0].Uid)
 	assert.Equal(t, "Amazing description on two lines", gc.Events[0].Description)

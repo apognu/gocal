@@ -26,6 +26,7 @@ type Gocal struct {
 	buffer     *Event
 	Start      *time.Time
 	End        *time.Time
+	Method     string
 }
 
 const (

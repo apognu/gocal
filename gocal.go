@@ -53,6 +53,8 @@ func (gc *Gocal) Parse() error {
 			ctx = ctx.Nest(ContextEvent)
 
 			gc.buffer = &Event{Valid: true, delayed: make([]*Line, 0)}
+		} else if ctx.Value == ContextRoot && l.IsKey("METHOD") {
+			gc.Method = l.Value
 		} else if ctx.Value == ContextEvent && l.Is("END", "VEVENT") {
 			if ctx.Previous == nil {
 				return fmt.Errorf("got an END:* without matching BEGIN:*")
