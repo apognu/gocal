@@ -120,7 +120,7 @@ type Event struct {
 	Sequence         int
 	CustomAttributes map[string]string
 	Valid            bool
-    Comment          string
+	Comment          string
 }
 
 type Geo struct {
