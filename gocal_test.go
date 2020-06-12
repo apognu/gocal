@@ -20,10 +20,12 @@ DESCRIPTION:Amazing description on t
  wo lines
 LAST-MODIFIED:20141110T150010Z
 ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=Antoin
- e Popineau;X-NUM-GUESTS=0:mailto:antoine.popineau@example.net
+ e Popineau;X-NUM-GUESTS=0;X-RESPONSE-COMMENT="Not interested":mailto:antoi
+ ne.popineau@example.net
 ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=John
   Connor;X-NUM-GUESTS=0:mailto:john.connor@example.net
 LOCATION:My Place
+COMMENT;LANGUAGE=en-US:I don't think so.
 SEQUENCE:0
 STATUS:CONFIRMED
 SUMMARY:Lorem Ipsum Dolor Sit Amet
@@ -60,6 +62,9 @@ func Test_Parse(t *testing.T) {
 	assert.Equal(t, "0001@example.net", gc.Events[0].Uid)
 	assert.Equal(t, "Amazing description on two lines", gc.Events[0].Description)
 	assert.Equal(t, 2, len(gc.Events[0].Attendees))
+	assert.Equal(t, "Antoine Popineau", gc.Events[0].Attendees[0].Cn)
+	assert.Equal(t, "0", gc.Events[0].Attendees[0].CustomAttributes["X-NUM-GUESTS"])
+	assert.Equal(t, "\"Not interested\"", gc.Events[0].Attendees[0].CustomAttributes["X-RESPONSE-COMMENT"])
 	assert.Equal(t, "John Connor", gc.Events[0].Attendees[1].Cn)
 	assert.Equal(t, 0, len(gc.Events[0].CustomAttributes))
 	assert.Equal(t, 2, len(gc.Events[1].CustomAttributes))
