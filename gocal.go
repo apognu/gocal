@@ -318,8 +318,8 @@ func (gc *Gocal) parseEvent(l *Line) error {
 		gc.buffer.Categories = strings.Split(l.Value, ",")
 	case "URL":
 		gc.buffer.URL = l.Value
-    case "COMMENT":
-        gc.buffer.Comment = l.Value
+	case "COMMENT":
+		gc.buffer.Comment = l.Value
 	default:
 		key := strings.ToUpper(l.Key)
 		if strings.HasPrefix(key, "X-") {
