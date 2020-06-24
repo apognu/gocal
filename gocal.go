@@ -274,12 +274,28 @@ func (gc *Gocal) parseEvent(l *Line) error {
 			Value:       l.Value,
 		}
 	case "ATTENDEE":
-		gc.buffer.Attendees = append(gc.buffer.Attendees, Attendee{
-			Cn:          l.Params["CN"],
-			DirectoryDn: l.Params["DIR"],
-			Status:      l.Params["PARTSTAT"],
-			Value:       l.Value,
-		})
+		attendee := Attendee{
+			Value: l.Value,
+		}
+		for key, val := range l.Params {
+			key := strings.ToUpper(key)
+			switch key {
+			case "CN":
+				attendee.Cn = val
+			case "DIR":
+				attendee.DirectoryDn = val
+			case "PARTSTAT":
+				attendee.Status = val
+			default:
+				if strings.HasPrefix(key, "X-") {
+					if attendee.CustomAttributes == nil {
+						attendee.CustomAttributes = make(map[string]string)
+					}
+					attendee.CustomAttributes[key] = val
+				}
+			}
+		}
+		gc.buffer.Attendees = append(gc.buffer.Attendees, attendee)
 	case "ATTACH":
 		gc.buffer.Attachments = append(gc.buffer.Attachments, Attachment{
 			Type:     l.Params["VALUE"],
@@ -302,6 +318,8 @@ func (gc *Gocal) parseEvent(l *Line) error {
 		gc.buffer.Categories = strings.Split(l.Value, ",")
 	case "URL":
 		gc.buffer.URL = l.Value
+	case "COMMENT":
+		gc.buffer.Comment = l.Value
 	default:
 		key := strings.ToUpper(l.Key)
 		if strings.HasPrefix(key, "X-") {

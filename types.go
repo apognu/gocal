@@ -120,6 +120,7 @@ type Event struct {
 	Sequence         int
 	CustomAttributes map[string]string
 	Valid            bool
+	Comment          string
 }
 
 type Geo struct {
@@ -134,10 +135,11 @@ type Organizer struct {
 }
 
 type Attendee struct {
-	Cn          string
-	DirectoryDn string
-	Status      string
-	Value       string
+	Cn               string
+	DirectoryDn      string
+	Status           string
+	Value            string
+	CustomAttributes map[string]string
 }
 
 type Attachment struct {
