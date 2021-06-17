@@ -1,9 +1,10 @@
 github.com/ChannelMeter/iso8601duration v0.0.0-20150204201828-8da3af7a2a61 h1:N5Vqww5QISEHsWHOWDEx4PzdIay3Cg0Jp7zItq2ZAro=
 github.com/ChannelMeter/iso8601duration v0.0.0-20150204201828-8da3af7a2a61/go.mod h1:GnKXcK+7DYNy/8w2Ex//Uql4IgfaU82Cd5rWKb7ah00=
+github.com/channelmeter/iso8601duration v0.0.0-20150204201828-8da3af7a2a61 h1:o64h9XF42kVEUuhuer2ehqrlX8rZmvQSU0+Vpj1rF6Q=
+github.com/channelmeter/iso8601duration v0.0.0-20150204201828-8da3af7a2a61/go.mod h1:Rp8e0DCtEKwXFOC6JPJQVTz8tuGoGvw6Xfexggh/ed0=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
 github.com/stretchr/testify v1.2.0 h1:LThGCOvhuJic9Gyd1VBCkhyUXmO8vKaBFvBsJ2k03rg=
 github.com/stretchr/testify v1.2.0/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
