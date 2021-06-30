@@ -107,6 +107,15 @@ RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU
 EXDATE;VALUE=DATE:20180129T090000Z
 END:VEVENT
 BEGIN:VEVENT
+DTSTART:20180101T090000Z
+DTEND:20180101T110000Z
+DTSTAMP:20151116T133227Z
+UID:0002@google.com
+SUMMARY:Every two weeks on mondays and tuesdays for three events
+RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU;COUNT=3
+EXDATE;VALUE=DATE:20180129T090000Z
+END:VEVENT
+BEGIN:VEVENT
 DTSTART:20180101T110000Z
 DTEND:20180101T130000Z
 DTSTAMP:20151116T133227Z
@@ -123,7 +132,7 @@ func Test_ReccuringRule(t *testing.T) {
 	gc.Start, gc.End = &start, &end
 	gc.Parse()
 
-	assert.Equal(t, 7, len(gc.Events))
+	assert.Equal(t, 9, len(gc.Events))
 
 	assert.Equal(t, "This changed!", gc.Events[0].Summary)
 	assert.Equal(t, "Every month on the second", gc.Events[2].Summary)
