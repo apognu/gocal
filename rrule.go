@@ -69,7 +69,7 @@ func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 
 		if !hasByMonth || strings.Contains(fmt.Sprintf("%d", byMonth), weekDaysStart.Format("1")) {
 			if hasByDay {
-				for i := 0; i < 7; i++ {
+				for i := 0; i < 7 && count != 0; i++ {
 					excluded := false
 					for _, ex := range buf.ExcludeDates {
 						if ex.Equal(*weekDaysStart) {
