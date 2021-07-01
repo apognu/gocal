@@ -74,6 +74,13 @@ func (gc *Gocal) Parse() error {
 				}
 			}
 
+			// If an event has a VALUE=DATE start date and no end date, event lasts a day
+			if gc.buffer.End == nil && gc.buffer.RawStart.Params["VALUE"] == "DATE" {
+				d := (*gc.buffer.Start).Add(24 * time.Hour)
+
+				gc.buffer.End = &d
+			}
+
 			err := gc.checkEvent()
 			if err != nil {
 				switch gc.Strict.Mode {
@@ -82,6 +89,10 @@ func (gc *Gocal) Parse() error {
 				case StrictModeFailEvent:
 					continue
 				}
+			}
+
+			if gc.buffer.Start == nil || gc.buffer.End == nil {
+				continue
 			}
 
 			if gc.buffer.IsRecurring {
