@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/apognu/gocal/parser"
+	log "github.com/sirupsen/logrus"
 )
 
 func NewParser(r io.Reader) *Gocal {
@@ -259,6 +260,9 @@ func (gc *Gocal) parseEvent(l *Line) error {
 	case "EXDATE":
 		d, err := parser.ParseTime(l.Value, map[string]string{}, parser.TimeStart, false, gc.AllDayEventsTZ)
 		if err == nil {
+			log.WithFields(log.Fields{
+				"excludedDate": *d,
+			}).Info("Excluding date")
 			gc.buffer.ExcludeDates = append(gc.buffer.ExcludeDates, *d)
 		}
 	case "SEQUENCE":
