@@ -89,6 +89,8 @@ func Test_ParseLine(t *testing.T) {
 // Instance of January, 1st is changed
 // Event repeats every month on the second day
 const recuringICS = `BEGIN:VCALENDAR
+PRODID:Gocal
+VERSION:2.0
 BEGIN:VEVENT
 DTSTART:20180102
 DTEND:20180103
@@ -104,22 +106,22 @@ DTSTAMP:20151116T133227Z
 UID:0002@google.com
 SUMMARY:Every two weeks on mondays and tuesdays forever
 RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU
-EXDATE;VALUE=DATE:20180129T090000Z
+EXDATE;VALUE=DATE-TIME:20180129T090000Z
 END:VEVENT
 BEGIN:VEVENT
 DTSTART:20180101T090000Z
 DTEND:20180101T110000Z
 DTSTAMP:20151116T133227Z
-UID:0002@google.com
+UID:0003@google.com
 SUMMARY:Every two weeks on mondays and tuesdays for three events
 RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU;COUNT=3
-EXDATE;VALUE=DATE:20180129T090000Z
+EXDATE;VALUE=DATE-TIME:20180129T090000Z
 END:VEVENT
 BEGIN:VEVENT
 DTSTART:20180101T110000Z
 DTEND:20180101T130000Z
 DTSTAMP:20151116T133227Z
-UID:0002@google.com
+UID:004@google.com
 RECURRENCE-ID:20180101T090000Z
 SUMMARY:This changed!
 END:VEVENT
@@ -132,7 +134,7 @@ func Test_ReccuringRule(t *testing.T) {
 	gc.Start, gc.End = &start, &end
 	gc.Parse()
 
-	assert.Equal(t, 9, len(gc.Events))
+	assert.Equal(t, 11, len(gc.Events))
 
 	assert.Equal(t, "This changed!", gc.Events[0].Summary)
 	assert.Equal(t, "Every month on the second", gc.Events[2].Summary)
@@ -278,15 +280,8 @@ func Test_ReccuringRuleWithMultipleExdate(t *testing.T) {
 	gc.Start, gc.End = &start, &end
 	gc.Parse()
 
-	t.Logf("%+v", gc.Events)
+	assert.Equal(t, 1, len(gc.Events))
 
-	/*
-		assert.Equal(t, 1, len(gc.Events))
-		d := time.Date(2020, 2, 20, 13, 0, 0, 0, location).Format("2006-02-01")
-		for _, e := range gc.Events {
-			assert.NotEqual(t, d, e.Start.Format("2016-02-01"))
-		}
-	*/
 }
 
 const unknownICS = `BEGIN:VCALENDAR

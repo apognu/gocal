@@ -257,11 +257,12 @@ func (gc *Gocal) parseEvent(l *Line) error {
 
 		gc.buffer.RecurrenceID = l.Value
 	case "EXDATE":
-		d, err := parser.ParseTime(l.Value, map[string]string{}, parser.TimeStart, false, gc.AllDayEventsTZ)
+		/*
+			Reference: https://icalendar.org/iCalendar-RFC-5545/3-8-5-1-exception-date-times.html
+			Several parameters are allowed.  We should pass parameters we have
+		*/
+		d, err := parser.ParseTime(l.Value, l.Params, parser.TimeStart, false, gc.AllDayEventsTZ)
 		if err == nil {
-
-			fmt.Printf("Excluding date: %v\n", *d)
-
 			gc.buffer.ExcludeDates = append(gc.buffer.ExcludeDates, *d)
 		}
 	case "SEQUENCE":
