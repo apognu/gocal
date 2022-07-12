@@ -122,6 +122,7 @@ type Event struct {
 	CustomAttributes map[string]string
 	Valid            bool
 	Comment          string
+	Class            string
 }
 
 type Geo struct {
