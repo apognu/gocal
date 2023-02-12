@@ -1,6 +1,7 @@
 package gocal
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -72,16 +73,84 @@ func Test_Parse(t *testing.T) {
 }
 
 func Test_ParseLine(t *testing.T) {
-	gc := NewParser(strings.NewReader("HELLO;KEY1=value1;KEY2=value2: world"))
-	gc.scanner.Scan()
-	l, err, done := gc.parseLine()
+	tests := []struct {
+		from         string
+		expectKey    string
+		expectValue  string
+		expectParams map[string]string
+	}{
+		{
+			from:         `HELLO: world`,
+			expectKey:    "HELLO",
+			expectValue:  "world",
+			expectParams: map[string]string{},
+		},
+		{
+			from:         `HELLO:`,
+			expectKey:    "HELLO",
+			expectValue:  "",
+			expectParams: map[string]string{},
+		},
+		{
+			from:         `HELLO;KEY1=value1;KEY2=value2: world`,
+			expectKey:    "HELLO",
+			expectValue:  "world",
+			expectParams: map[string]string{"KEY1": `value1`, "KEY2": `value2`},
+		},
+		{
+			from:         `HELLO;KEY1="foo:value1";KEY2="bar:value2": world`,
+			expectKey:    "HELLO",
+			expectValue:  "world",
+			expectParams: map[string]string{"KEY1": `"foo:value1"`, "KEY2": `"bar:value2"`},
+		},
+	}
 
-	assert.Equal(t, nil, err)
-	assert.Equal(t, true, done)
+	for idx, test := range tests {
+		t.Run(fmt.Sprintf("parse-line-%d", idx), func(t *testing.T) {
+			gc := NewParser(strings.NewReader(test.from))
+			gc.scanner.Scan()
+			l, err, done := gc.parseLine()
 
-	assert.Equal(t, "HELLO", l.Key)
-	assert.Equal(t, "world", l.Value)
-	assert.Equal(t, map[string]string{"KEY1": "value1", "KEY2": "value2"}, l.Params)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, true, done)
+
+			assert.Equal(t, test.expectKey, l.Key)
+			assert.Equal(t, test.expectValue, l.Value)
+			assert.Equal(t, test.expectParams, l.Params)
+		})
+	}
+}
+
+func createLine(size int) string {
+	return fmt.Sprintf("%s:%s", strings.Repeat("A", size), strings.Repeat("B", size))
+}
+
+func Benchmark_splitLineTokens20(b *testing.B) {
+	l := createLine(10)
+	for n := 0; n < b.N; n++ {
+		splitLineTokens(l)
+	}
+}
+
+func Benchmark_stringSplitN20(b *testing.B) {
+	l := createLine(10)
+	for n := 0; n < b.N; n++ {
+		strings.SplitN(l, ":", 2)
+	}
+}
+
+func Benchmark_splitLineTokens100(b *testing.B) {
+	l := createLine(50)
+	for n := 0; n < b.N; n++ {
+		splitLineTokens(l)
+	}
+}
+
+func Benchmark_stringSplitN100(b *testing.B) {
+	l := createLine(50)
+	for n := 0; n < b.N; n++ {
+		strings.SplitN(l, ":", 2)
+	}
 }
 
 // Event repeats every second monday and tuesday
@@ -281,7 +350,6 @@ func Test_ReccuringRuleWithMultipleExdate(t *testing.T) {
 	gc.Parse()
 
 	assert.Equal(t, 1, len(gc.Events))
-
 }
 
 const unknownICS = `BEGIN:VCALENDAR
