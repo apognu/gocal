@@ -55,9 +55,10 @@ func Test_Parse(t *testing.T) {
 
 	gc := NewParser(strings.NewReader(ics))
 	gc.Start, gc.End = &start, &end
-	gc.Parse()
+	err := gc.Parse()
 
-	assert.Equal(t, 2, len(gc.Events))
+	assert.Nil(t, err)
+	assert.Len(t, gc.Events, 2)
 
 	assert.Equal(t, "COUNTER", gc.Method)
 	assert.Equal(t, "Lorem Ipsum Dolor Sit Amet", gc.Events[0].Summary)

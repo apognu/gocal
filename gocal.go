@@ -209,8 +209,6 @@ func splitLineTokens(line string) []string {
 }
 
 func (gc *Gocal) parseEvent(l *Line) error {
-	var err error
-
 	// If this is nil, that means we did not get a BEGIN:VEVENT
 	if gc.buffer == nil {
 		return nil
@@ -218,123 +216,74 @@ func (gc *Gocal) parseEvent(l *Line) error {
 
 	switch l.Key {
 	case "UID":
-		if gc.buffer.Uid != "" {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.Uid == "" || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.Uid = l.Value
+		if err := resolve(gc, l, &gc.buffer.Uid, resolveString, nil); err != nil {
+			return err
 		}
 	case "SUMMARY":
-		if gc.buffer.Summary != "" {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.Summary == "" || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.Summary = l.Value
+		if err := resolve(gc, l, &gc.buffer.Summary, resolveString, nil); err != nil {
+			return err
 		}
 	case "DESCRIPTION":
-		if gc.buffer.Description != "" {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.Description == "" || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.Description = l.Value
+		if err := resolve(gc, l, &gc.buffer.Description, resolveString, nil); err != nil {
+			return err
 		}
 	case "DTSTART":
-		if gc.buffer.Start != nil {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.Start == nil || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.Start, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, false, gc.AllDayEventsTZ)
+		if err := resolve(gc, l, &gc.buffer.Start, resolveDate, func(gc *Gocal, out *time.Time) {
 			gc.buffer.RawStart = RawDate{Value: l.Value, Params: l.Params}
-			if err != nil {
-				return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
-			}
+		}); err != nil {
+			return err
 		}
 	case "DTEND":
-		if gc.buffer.End != nil {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.End == nil || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.End, err = parser.ParseTime(l.Value, l.Params, parser.TimeEnd, false, gc.AllDayEventsTZ)
+		if err := resolve(gc, l, &gc.buffer.End, resolveDateEnd, func(gc *Gocal, out *time.Time) {
 			gc.buffer.RawEnd = RawDate{Value: l.Value, Params: l.Params}
-			if err != nil {
-				return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
-			}
+		}); err != nil {
+			return err
 		}
 	case "DURATION":
+		// The DURATION attribute should imply DTEND as DTSTART+DURATION.
+		// If we have not processed DTSTART yet, add this to the delayed attributes to be processed later.
 		if gc.buffer.Start == nil {
 			gc.buffer.delayed = append(gc.buffer.delayed, l)
 			return nil
 		}
 
-		duration, err := parser.ParseDuration(l.Value)
-		if err != nil {
-			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
+		if err := resolve(gc, l, &gc.buffer.Duration, resolveDuration, func(gc *Gocal, out *time.Duration) {
+			if out != nil {
+				gc.buffer.Duration = out
+				end := gc.buffer.Start.Add(*out)
+				gc.buffer.End = &end
+			}
+		}); err != nil {
+			return err
 		}
-		gc.buffer.Duration = duration
-		end := gc.buffer.Start.Add(*duration)
-		gc.buffer.End = &end
 	case "DTSTAMP":
-		gc.buffer.Stamp, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, false, gc.AllDayEventsTZ)
-		if err != nil {
-			return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
+		if err := resolve(gc, l, &gc.buffer.Stamp, resolveDate, nil); err != nil {
+			return err
 		}
 	case "CREATED":
-		if gc.buffer.Created != nil {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.Created == nil || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.Created, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, false, gc.AllDayEventsTZ)
-			if err != nil {
-				return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
-			}
+		if err := resolve(gc, l, &gc.buffer.Created, resolveDate, nil); err != nil {
+			return err
 		}
 	case "LAST-MODIFIED":
-		if gc.buffer.LastModified != nil {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.LastModified == nil || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.LastModified, err = parser.ParseTime(l.Value, l.Params, parser.TimeStart, false, gc.AllDayEventsTZ)
-			if err != nil {
-				return fmt.Errorf("could not parse %s: %s", l.Key, l.Value)
-			}
+		if err := resolve(gc, l, &gc.buffer.LastModified, resolveDate, nil); err != nil {
+			return err
 		}
 	case "RRULE":
 		if len(gc.buffer.RecurrenceRule) != 0 {
 			return NewDuplicateAttribute(l.Key, l.Value)
 		}
 
-		gc.buffer.IsRecurring = true
-		gc.buffer.RecurrenceRule, err = parser.ParseRecurrenceRule(l.Value)
-	case "RECURRENCE-ID":
-		if gc.buffer.RecurrenceID != "" {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
+		if gc.buffer.RecurrenceRule == nil || gc.Duplicate.Mode == DuplicateModeKeepLast {
+			var err error
+
+			gc.buffer.IsRecurring = true
+			if gc.buffer.RecurrenceRule, err = parser.ParseRecurrenceRule(l.Value); err != nil {
+				return err
 			}
 		}
-
-		if gc.buffer.RecurrenceID == "" || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.RecurrenceID = l.Value
+	case "RECURRENCE-ID":
+		if err := resolve(gc, l, &gc.buffer.RecurrenceID, resolveString, nil); err != nil {
+			return err
 		}
 	case "EXDATE":
 		/*
@@ -348,38 +297,16 @@ func (gc *Gocal) parseEvent(l *Line) error {
 	case "SEQUENCE":
 		gc.buffer.Sequence, _ = strconv.Atoi(l.Value)
 	case "LOCATION":
-		if gc.buffer.Location != "" {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.Location == "" || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.Location = l.Value
+		if err := resolve(gc, l, &gc.buffer.Location, resolveString, nil); err != nil {
+			return err
 		}
 	case "STATUS":
-		if gc.buffer.Status != "" {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.Status == "" || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.Status = l.Value
+		if err := resolve(gc, l, &gc.buffer.Status, resolveString, nil); err != nil {
+			return err
 		}
 	case "ORGANIZER":
-		if gc.buffer.Organizer != nil {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.Organizer == nil || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			gc.buffer.Organizer = &Organizer{
-				Cn:          l.Params["CN"],
-				DirectoryDn: l.Params["DIR"],
-				Value:       l.Value,
-			}
+		if err := resolve(gc, l, &gc.buffer.Organizer, resolveOrganizer, nil); err != nil {
+			return err
 		}
 	case "ATTENDEE":
 		attendee := Attendee{
@@ -413,18 +340,8 @@ func (gc *Gocal) parseEvent(l *Line) error {
 			Value:    l.Value,
 		})
 	case "GEO":
-		if gc.buffer.Geo != nil {
-			if gc.Duplicate.Mode == DuplicateModeFailStrict {
-				return NewDuplicateAttribute(l.Key, l.Value)
-			}
-		}
-
-		if gc.buffer.Geo == nil || gc.Duplicate.Mode == DuplicateModeKeepLast {
-			lat, long, err := parser.ParseGeo(l.Value)
-			if err != nil {
-				return err
-			}
-			gc.buffer.Geo = &Geo{lat, long}
+		if err := resolve(gc, l, &gc.buffer.Geo, resolveGeo, nil); err != nil {
+			return err
 		}
 	case "CATEGORIES":
 		gc.buffer.Categories = strings.Split(l.Value, ",")
