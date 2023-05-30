@@ -233,10 +233,10 @@ func Test_ReccuringRuleWithExdate(t *testing.T) {
 
 	assert.Equal(t, 4, len(gc.Events))
 
-	d := time.Date(2019, 2, 1, 13, 0, 0, 0, time.Local).Format("2006-02-01")
+	d := time.Date(2019, 2, 1, 13, 0, 0, 0, time.Local).Format("2006-01-02")
 
 	for _, e := range gc.Events {
-		assert.NotEqual(t, d, e.Start.Format("2016-02-01"))
+		assert.NotEqual(t, d, e.Start.Format("2016-01-02"))
 	}
 }
 
@@ -525,4 +525,60 @@ func Test_DateEvent(t *testing.T) {
 		assert.Equal(t, gc.Events[1].End.Minute(), 59)
 		assert.Equal(t, gc.Events[1].End.Second(), 59)
 	}
+}
+
+const dupsICS = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTAMP:20151116T133227Z
+DTSTART;VALUE=DATE:20190101
+DTEND;VALUE=DATE:20190101
+UID:one@gocal
+UID:two@gocal
+UID:three@gocal
+SUMMARY:Event with inclusive same day event
+END:VEVENT`
+
+func Test_DuplicateAttributes(t *testing.T) {
+	start, end := time.Date(2018, 1, 1, 0, 0, 0, 0, time.Local), time.Date(2025, 2, 5, 23, 59, 59, 0, time.Local)
+
+	gc := NewParser(strings.NewReader(dupsICS))
+	gc.Start, gc.End = &start, &end
+	err := gc.Parse()
+
+	assert.NotNil(t, err)
+
+	gc = NewParser(strings.NewReader(dupsICS))
+	gc.Start, gc.End = &start, &end
+	gc.Strict.Mode = StrictModeFailAttribute
+	err = gc.Parse()
+
+	assert.Nil(t, err)
+	assert.Len(t, gc.Events, 1)
+	assert.False(t, gc.Events[0].Valid)
+
+	gc = NewParser(strings.NewReader(dupsICS))
+	gc.Start, gc.End = &start, &end
+	gc.Strict.Mode = StrictModeFailEvent
+	err = gc.Parse()
+
+	assert.Nil(t, err)
+	assert.Empty(t, gc.Events)
+
+	gc = NewParser(strings.NewReader(dupsICS))
+	gc.Start, gc.End = &start, &end
+	gc.Duplicate.Mode = DuplicateModeKeepFirst
+	err = gc.Parse()
+
+	assert.Nil(t, err)
+	assert.Len(t, gc.Events, 1)
+	assert.Equal(t, "one@gocal", gc.Events[0].Uid)
+
+	gc = NewParser(strings.NewReader(dupsICS))
+	gc.Start, gc.End = &start, &end
+	gc.Duplicate.Mode = DuplicateModeKeepLast
+	err = gc.Parse()
+
+	assert.Nil(t, err)
+	assert.Len(t, gc.Events, 1)
+	assert.Equal(t, "three@gocal", gc.Events[0].Uid)
 }

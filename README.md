@@ -71,6 +71,14 @@ By default, any error in parsing an event will result in the whole feed being ab
  * `StrictModeFailEvent` - skip the current event
  * `StrictModeFailAttribute` - skip parsing of the failing attribute, set the `Valid` attribute of the event to `false`
 
+### Duplicate attribute behavior
+
+The behavior when an attribute is duplicated can be customized with the `Duplicate.Mode` field. The default is to follow the configured strict mode behavior, but you can relax those rule by instructing `Gocal` to keep either the first or last value.
+
+ * `DuplicateModeFailStrict`
+ * `DuplicateModeKeepFirst`
+ * `DuplicateModeKeepLast`
+
 ## Limitations
 
 I do not pretend this abides by [RFC 5545](https://tools.ietf.org/html/rfc5545), this only covers parts I needed to be parsed for my own personal use. Among other, most property parameters are not handled by the library, and, for now, only the following properties are parsed:
