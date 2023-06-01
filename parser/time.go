@@ -26,8 +26,10 @@ func ParseTime(s string, params map[string]string, ty int, allday bool, allDayTZ
 		/*
 			Reference: https://icalendar.org/iCalendar-RFC-5545/3-3-4-date.html
 			DATE values are a specific format.  They should not include time information
+
+			But sometimes dates will not comply, which is why s[:8] instead of s
 		*/
-		t, err := time.Parse("20060102", s)
+		t, err := time.Parse("20060102", s[:8])
 		if ty == TimeStart {
 			t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, allDayTZ)
 		} else if ty == TimeEnd {
