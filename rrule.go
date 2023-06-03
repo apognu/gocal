@@ -2,6 +2,7 @@ package gocal
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -31,6 +32,15 @@ func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 
 	byDay, ok := buf.RecurrenceRule["BYDAY"]
 	hasByDay := ok
+
+	dayRecurrence := 1
+	if hasByDay {
+		re := regexp.MustCompile("[0-9]+")
+		dayRecurrenceStr := re.FindString(byDay)
+		if len(dayRecurrenceStr) > 0 {
+			dayRecurrence, _ = strconv.Atoi(dayRecurrenceStr)
+		}
+	}
 
 	var years, days, months int
 	switch freq {
@@ -82,6 +92,12 @@ func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 						day := parseDayNameToIcsName(weekDaysStart.Format("Mon"))
 
 						if strings.Contains(byDay, day) {
+							if currentCount != 0 {
+								recurrWeekDaysStart := weekDaysStart.AddDate(0, 0, (dayRecurrence-1)*7)
+								recurrWeekDaysEnd := weekDaysEnd.AddDate(0, 0, (dayRecurrence-1)*7)
+								weekDaysStart = &recurrWeekDaysStart
+								weekDaysEnd = &recurrWeekDaysEnd
+							}
 							currentCount++
 							count--
 
@@ -96,6 +112,7 @@ func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 								}
 							}
 
+							break
 						}
 					}
 
@@ -131,8 +148,14 @@ func (gc *Gocal) ExpandRecurringEvent(buf *Event) []Event {
 			}
 		}
 
+		eventDuration := freqDateEnd.Sub(*freqDateStart)
 		newStart := freqDateStart.AddDate(years, months, days)
 		newEnd := freqDateEnd.AddDate(years, months, days)
+		if freq != "WEEKLY" && (hasByDay || hasByMonth) {
+			// roll to the first of the month & ensure newEnd stays in sync
+			newStart = newStart.AddDate(0, 0, -(newStart.Day() - 1))
+			newEnd = newStart.Add(eventDuration)
+		}
 
 		freqDateStart = &newStart
 		freqDateEnd = &newEnd
