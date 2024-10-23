@@ -583,3 +583,50 @@ func Test_DuplicateAttributes(t *testing.T) {
 	assert.Len(t, gc.Events, 1)
 	assert.Equal(t, "three@gocal", gc.Events[0].Uid)
 }
+
+const recurrenceICSwithTZID = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+DTSTART;TZID=Europe/Moscow:20240927T190000
+DTEND;TZID=Europe/Moscow:20240927T200000
+SUMMARY:regular event
+UID:1a4pqkardx6cdkov4mj0
+SEQUENCE:2
+DTSTAMP:20241023T185434Z
+CREATED:20240923T130134Z
+RRULE:FREQ=WEEKLY;BYDAY=FR;UNTIL=20241228T170000Z;INTERVAL=1
+TRANSP:OPAQUE
+LAST-MODIFIED:20240923T130312Z
+CLASS:PRIVATE
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=Europe/Moscow:20241025T190000
+DTEND;TZID=Europe/Moscow:20241025T200000
+SUMMARY:not ordinary event
+UID:1a4pqkardx6cdkov4mj0
+SEQUENCE:1
+DTSTAMP:20241023T185434Z
+CREATED:20241018T073451Z
+RECURRENCE-ID;TZID=Europe/Moscow:20241025T190000
+TRANSP:OPAQUE
+LAST-MODIFIED:20241018T073451Z
+CLASS:PRIVATE
+END:VEVENT
+END:VCALENDAR`
+
+func Test_RecirrenceICSWithTZID(t *testing.T) {
+	start, end := time.Date(2024, 10, 25, 0, 0, 0, 0, time.UTC), time.Date(2024, 10, 25, 23, 59, 59, 0, time.UTC)
+
+	gc := NewParser(strings.NewReader(recurrenceICSwithTZID))
+	gc.Start, gc.End = &start, &end
+	gc.Parse()
+
+	assert.Equal(t, 1, len(gc.Events))
+	assert.Equal(t, "not ordinary event", gc.Events[0].Summary)
+
+	start, end = time.Date(2024, 10, 18, 0, 0, 0, 0, time.UTC), time.Date(2024, 10, 18, 23, 59, 59, 0, time.UTC)
+	gc = NewParser(strings.NewReader(recurrenceICSwithTZID))
+	gc.Start, gc.End = &start, &end
+	gc.Parse()
+	assert.Equal(t, 1, len(gc.Events))
+	assert.Equal(t, "regular event", gc.Events[0].Summary)
+}
