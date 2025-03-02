@@ -630,3 +630,34 @@ func Test_RecirrenceICSWithTZID(t *testing.T) {
 	assert.Equal(t, 1, len(gc.Events))
 	assert.Equal(t, "regular event", gc.Events[0].Summary)
 }
+
+func TestSplitLineTokens(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{"Empty input", "", []string{""}},
+		{"No colon", "hello", []string{"hello"}},
+		{"Single colon", "key:value", []string{"key", "value"}},
+		{"Colon at start", ":value", []string{"", "value"}},
+		{"Colon at end", "key:", []string{"key", ""}},
+		{"Multiple colons", "a:b:c", []string{"a", "b:c"}},
+		{"Quoted colon", `"a:b":c`, []string{`"a:b"`, "c"}},
+		{"Unquoted colon before quote", `a:"b:c"`, []string{"a", `"b:c"`}},
+		{"Unmatched quote", `"a:b`, []string{`"a:b`}},
+		{"Multiple quotes", `"a:b":"c:d"`, []string{`"a:b"`, `"c:d"`}},
+		{"Only colon", ":", []string{"", ""}},
+		{"Colon before quote", `a:b"c:d"`, []string{"a", `b"c:d"`}},
+		{"Only quote", `"hello"`, []string{`"hello"`}},
+		{"Quoted colon at end", `"abc":`, []string{`"abc"`}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := splitLineTokens(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+

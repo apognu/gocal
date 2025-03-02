@@ -191,8 +191,9 @@ func splitLineTokens(line string) []string {
 	// go's Split is highly optimized -> use, unless we cannot
 	if idxQuote := strings.Index(line, `"`); idxQuote == -1 {
 		return strings.SplitN(line, ":", 2)
-	} else if idxColon := strings.Index(line, ":"); idxQuote > idxColon {
-		return []string{line[0:idxColon], line[idxColon+1:]}
+	} else if idxColon := strings.Index(line, ":"); idxColon != -1 && idxQuote > idxColon {
+		// Fix: Only split if colon exists (idxColon != -1)
+		return []string{line[:idxColon], line[idxColon+1:]}
 	}
 
 	// otherwise, we need to do it ourselves, let's keep it simple at least:
@@ -201,8 +202,11 @@ func splitLineTokens(line string) []string {
 	for idx, char := range []byte(line) {
 		if char == '"' {
 			quoted = !quoted
-		} else if char == ':' && !quoted && idx+1 < size {
-			return []string{line[0:idx], line[idx+1:]}
+		} else if char == ':' && !quoted {
+			if idx+1 < size {
+				return []string{line[:idx], line[idx+1:]}
+			}
+			return []string{line[:idx]}
 		}
 	}
 	return []string{line}
@@ -387,3 +391,4 @@ func (gc *Gocal) checkEvent() error {
 func SetTZMapper(cb func(s string) (*time.Location, error)) {
 	parser.TZMapper = cb
 }
+
