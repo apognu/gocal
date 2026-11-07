@@ -355,6 +355,37 @@ func Test_ReccuringRuleWithMultipleExdate(t *testing.T) {
 	assert.Equal(t, 1, len(gc.Events))
 }
 
+const recurringICSWithExdateList = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:plop
+SUMMARY:Lorem ipsum dolor sit amet
+DTSTAMP:20151116T133227Z
+DTSTART;TZID=Europe/Zurich:20261026T102000
+DTEND;TZID=Europe/Zurich:20261026T110500
+RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20270716T235959Z
+EXDATE;TZID=Europe/Zurich:20261102T102000,20261109T102000
+END:VEVENT
+END:VCALENDAR`
+
+// RFC 5545 allows EXDATE to hold a comma-separated list of dates.
+func Test_ReccuringRuleWithExdateList(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Zurich")
+	if err != nil {
+		t.Fatalf("Error setting timezone: %v", err)
+	}
+	start, end := time.Date(2026, 10, 25, 0, 0, 0, 0, location), time.Date(2026, 11, 20, 0, 0, 0, 0, location)
+
+	gc := NewParser(strings.NewReader(recurringICSWithExdateList))
+	gc.Start, gc.End = &start, &end
+	gc.Parse()
+
+	var got []string
+	for _, e := range gc.Events {
+		got = append(got, e.Start.In(location).Format("2006-01-02"))
+	}
+	assert.Equal(t, []string{"2026-10-26", "2026-11-16"}, got)
+}
+
 const unknownICS = `BEGIN:VCALENDAR
 BEGIN:VEVENT
 DTSTART;VALUE=DATE:20180117
